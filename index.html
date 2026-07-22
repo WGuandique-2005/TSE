@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSE | Simulación de Elecciones Electrónicas - UGB</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --azul-marino:#0B1F4E;
+    --azul-primario:#1D4ED8;
+    --azul-claro:#3B82F6;
+    --azul-hielo:#EFF4FF;
+    --blanco:#FFFFFF;
+    --gris-linea:#DCE3F0;
+    --verde:#16A34A;
+    --rojo:#DC2626;
+  }
+  body{ font-family:'Inter', system-ui, sans-serif; background:var(--blanco); color:var(--azul-marino); }
+  .font-display{ font-family:'Libre Baskerville', Georgia, serif; }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; animation:aparecer .25s ease; }
+  @keyframes aparecer{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .btn-primario{ background:var(--azul-primario); color:#fff; transition:background .15s ease, transform .1s ease; }
+  .btn-primario:hover:not(:disabled){ background:var(--azul-marino); }
+  .btn-primario:active:not(:disabled){ transform:scale(.98); }
+  .btn-primario:disabled{ background:#B9C6E6; cursor:not-allowed; }
+
+  .btn-secundario{ border:1.5px solid var(--gris-linea); color:var(--azul-marino); transition:background .15s ease, border-color .15s ease; }
+  .btn-secundario:hover{ background:var(--azul-hielo); border-color:var(--azul-claro); }
+
+  input:focus, select:focus{ outline:none; border-color:var(--azul-primario); box-shadow:0 0 0 3px rgba(29,78,216,.15); }
+  input.campo-error{ border-color:var(--rojo) !important; }
+
+  .boleta-card{
+    border:2px solid var(--gris-linea);
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .boleta-card:hover{ transform:translateY(-3px); box-shadow:0 12px 24px -14px rgba(11,31,78,.35); border-color:var(--azul-claro); }
+  .boleta-card.seleccionada{ border-color:var(--azul-primario); background:var(--azul-hielo); box-shadow:0 0 0 3px rgba(29,78,216,.15); }
+  .marca-seleccion{ display:none; }
+  .boleta-card.seleccionada .marca-seleccion{ display:flex; }
+
+  .modal-overlay{ background:rgba(11,31,78,.55); }
+
+  .spinner{ width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:girar .6s linear infinite; display:inline-block; }
+  @keyframes girar{ to{ transform:rotate(360deg); } }
+
+  /* Indicador de pasos */
+  .paso{ display:flex; align-items:center; gap:8px; }
+  .paso-circulo{ width:28px; height:28px; border-radius:9999px; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; border:2px solid var(--gris-linea); color:#94A3B8; background:#fff; }
+  .paso.activo .paso-circulo{ border-color:var(--azul-primario); color:var(--azul-primario); }
+  .paso.completado .paso-circulo{ background:var(--azul-primario); border-color:var(--azul-primario); color:#fff; }
+  .paso-linea{ flex:1; height:2px; background:var(--gris-linea); }
+  .paso.completado + .paso-linea{ background:var(--azul-primario); }
+
+  #barraSeleccion{ transform:translateY(100%); transition:transform .2s ease; }
+  #barraSeleccion.mostrar{ transform:translateY(0); }
+
+  ::-webkit-scrollbar{ width:10px; }
+  ::-webkit-scrollbar-thumb{ background:var(--azul-claro); border-radius:10px; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ======================= HEADER ======================= -->
+<header class="w-full border-b-4 border-[var(--azul-primario)] sticky top-0 bg-white z-40">
+  <div class="bg-[var(--azul-marino)] text-white text-xs sm:text-sm">
+    <div class="max-w-6xl mx-auto px-4 py-1.5 flex items-center justify-between">
+      <span>Portal Electoral — Universidad Gerardo Barrios</span>
+      <span id="reloj" class="hidden sm:block"></span>
+    </div>
+  </div>
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <button onclick="irA('inicio')" class="flex items-center gap-3">
+      <img src="assets/escudo-gobierno.png" alt="Escudo de El Salvador" class="h-11 w-auto">
+      <div class="h-9 w-px bg-[var(--gris-linea)]"></div>
+      <img src="assets/logo-tse.png" alt="Tribunal Supremo Electoral" class="h-8 w-auto">
+    </button>
+    <nav class="flex items-center gap-2">
+      <button onclick="irA('inicio')" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Inicio</button>
+      <button onclick="irA('resultados')" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Resultados</button>
+    </nav>
+  </div>
+</header>
+
+<div id="avisoConfig" class="hidden bg-amber-50 border-b border-amber-300 text-amber-800 text-sm text-center py-2 px-4">
+  ⚠️ Falta conectar Supabase: revisa <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> al final del archivo.
+</div>
+
+<!-- ======================= INDICADOR DE PASOS (solo durante el flujo de voto) ======================= -->
+<div id="indicadorPasos" class="hidden max-w-md mx-auto w-full px-4 pt-6">
+  <div class="flex items-center">
+    <div class="paso" data-paso="1"><div class="paso-circulo">1</div><span class="text-xs font-semibold hidden sm:block">Identificación</span></div>
+    <div class="paso-linea"></div>
+    <div class="paso" data-paso="2"><div class="paso-circulo">2</div><span class="text-xs font-semibold hidden sm:block">Boleta</span></div>
+    <div class="paso-linea"></div>
+    <div class="paso" data-paso="3"><div class="paso-circulo">3</div><span class="text-xs font-semibold hidden sm:block">Confirmación</span></div>
+  </div>
+</div>
+
+<main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8 pb-28">
+
+  <!-- ======================= INICIO ======================= -->
+  <section id="pantalla-inicio" class="screen active">
+    <div class="relative overflow-hidden rounded-2xl border border-[var(--gris-linea)] bg-gradient-to-br from-[var(--azul-hielo)] to-white">
+      <div class="px-6 sm:px-14 py-14 sm:py-20 text-center">
+        <img src="assets/escudo-gobierno.png" alt="" class="h-16 w-auto mx-auto mb-5 opacity-90">
+        <p class="uppercase tracking-[0.25em] text-xs sm:text-sm font-semibold text-[var(--azul-primario)] mb-4">Facultad de Ciencias y Tecnología</p>
+        <h1 class="font-display text-3xl sm:text-5xl font-bold leading-tight mb-4">Sistema de Votación Electrónica</h1>
+        <p class="max-w-2xl mx-auto text-slate-600 mb-8">Simulación de elecciones electrónicas del Tribunal Supremo Electoral. Ingresa tu identificación de estudiante para emitir tu voto de forma libre, única y secreta.</p>
+        <button id="btnIngresarVotar" onclick="intentarIngresarVotar()" class="btn-primario font-semibold px-8 py-3.5 rounded-lg shadow-lg inline-flex items-center gap-2">
+          Ingresar a votar
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <p id="avisoVotacionCerrada" class="hidden mt-4 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2 inline-block">La votación ha finalizado. Puedes consultar los resultados.</p>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-4 mt-8">
+      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+        <p class="font-display font-bold text-lg mb-1">01. Identifícate</p>
+        <p class="text-sm text-slate-600">Con tu DUI/carné, código y nombre completo se verifica que estés habilitado.</p>
+      </div>
+      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+        <p class="font-display font-bold text-lg mb-1">02. Elige y confirma</p>
+        <p class="text-sm text-slate-600">Seleccionas un único partido y confirmas antes de que se registre tu voto.</p>
+      </div>
+      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+        <p class="font-display font-bold text-lg mb-1">03. Resultados</p>
+        <p class="text-sm text-slate-600">Consulta el conteo, los porcentajes y el partido ganador en tiempo real.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= IDENTIFICACIÓN ======================= -->
+  <section id="pantalla-identificacion" class="screen">
+    <div class="max-w-lg mx-auto border border-[var(--gris-linea)] rounded-2xl p-6 sm:p-8 mt-6">
+      <h2 class="font-display text-2xl font-bold mb-1">Identificación del votante</h2>
+      <p class="text-sm text-slate-500 mb-6">Tus datos se comparan contra la lista de estudiantes habilitados.</p>
+
+      <form id="formIdentificacion" class="space-y-4" novalidate>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Código de estudiante</label>
+          <input required id="inCodigo" type="text" placeholder="UGB000" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Nombres</label>
+          <input required id="inNombres" type="text" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1">Apellidos</label>
+          <input required id="inApellidos" type="text" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5">
+        </div>
+
+        <p id="errorIdentificacion" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></p>
+
+        <button type="submit" id="btnVerificar" class="btn-primario w-full font-semibold py-3 rounded-lg flex items-center justify-center gap-2">
+          <span>Verificar identidad</span>
+        </button>
+        <button type="button" onclick="irA('inicio')" class="btn-secundario w-full text-sm font-semibold py-2.5 rounded-lg">Volver</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ======================= BOLETA ======================= -->
+  <section id="pantalla-boleta" class="screen">
+    <div class="text-center mb-8 mt-6">
+      <h2 class="font-display text-2xl sm:text-3xl font-bold">Boleta electoral</h2>
+      <p class="text-slate-600 mt-1">Hola <span id="nombreVotante" class="font-semibold"></span>, elige un único partido. Podrás confirmarlo antes de votar.</p>
+    </div>
+    <div id="listaPartidos" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </section>
+
+  <!-- ======================= YA VOTÓ ======================= -->
+  <section id="pantalla-yavoto" class="screen">
+    <div class="max-w-md mx-auto text-center border border-[var(--gris-linea)] rounded-2xl p-10 mt-6">
+      <div class="mx-auto h-14 w-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-4">!</div>
+      <h2 class="font-display text-2xl font-bold mb-2">Ya ejerciste tu voto</h2>
+      <p class="text-slate-600 mb-6">Nuestros registros indican que este DUI/carné ya emitió un voto. Cada estudiante puede votar una sola vez.</p>
+      <button onclick="irA('resultados')" class="btn-primario font-semibold px-6 py-2.5 rounded-lg">Ver resultados</button>
+    </div>
+  </section>
+
+  <!-- ======================= VOTO REGISTRADO ======================= -->
+  <section id="pantalla-exito" class="screen">
+    <div class="max-w-md mx-auto text-center border border-[var(--gris-linea)] rounded-2xl p-10 mt-6">
+      <div class="mx-auto h-14 w-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl mb-4">✓</div>
+      <h2 class="font-display text-2xl font-bold mb-2">Voto registrado correctamente</h2>
+      <p class="text-slate-600 mb-6">Gracias por participar en la simulación electoral. Tu voto fue contabilizado de forma anónima en los resultados.</p>
+      <button onclick="irA('resultados')" class="btn-primario font-semibold px-6 py-2.5 rounded-lg">Ver resultados</button>
+    </div>
+  </section>
+
+  <!-- ======================= RESULTADOS ======================= -->
+  <section id="pantalla-resultados" class="screen">
+    <div class="text-center mb-8 mt-6">
+      <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-1">Escrutinio</p>
+      <h2 class="font-display text-2xl sm:text-3xl font-bold">Resultados electorales</h2>
+    </div>
+
+    <div id="sinVotos" class="hidden max-w-md mx-auto text-center text-slate-500 border border-dashed border-[var(--gris-linea)] rounded-2xl p-10 mb-8">
+      Aún no hay votos registrados. Los resultados aparecerán aquí en cuanto se emita el primer voto.
+    </div>
+
+    <div id="tarjetaGanador" class="hidden max-w-xl mx-auto border-2 border-[var(--azul-primario)] rounded-2xl p-6 mb-8 bg-[var(--azul-hielo)] text-center"></div>
+
+    <div id="bloqueResultados" class="hidden grid lg:grid-cols-2 gap-8 items-start">
+      <div class="border border-[var(--gris-linea)] rounded-2xl p-5">
+        <canvas id="graficoResultados" height="260"></canvas>
+      </div>
+      <div id="listaResultados" class="space-y-4"></div>
+    </div>
+
+    <div class="text-center mt-8 flex flex-col items-center gap-2">
+      <p id="totalVotos" class="text-sm text-slate-500"></p>
+      <button onclick="cargarResultados()" class="btn-secundario text-xs font-semibold px-4 py-2 rounded-lg">↻ Actualizar resultados</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ======================= BARRA FLOTANTE DE SELECCIÓN (pantalla boleta) ======================= -->
+<div id="barraSeleccion" class="fixed bottom-0 inset-x-0 bg-white border-t border-[var(--gris-linea)] shadow-[0_-8px_20px_-10px_rgba(11,31,78,.25)] py-3 z-30">
+  <div class="max-w-3xl mx-auto px-4 flex items-center justify-between gap-4">
+    <p class="text-sm"><span class="text-slate-500">Partido seleccionado:</span> <span id="nombreSeleccion" class="font-semibold"></span></p>
+    <button onclick="abrirModal()" class="btn-primario font-semibold px-6 py-2.5 rounded-lg whitespace-nowrap">Continuar</button>
+  </div>
+</div>
+
+<!-- ======================= MODAL DE CONFIRMACIÓN ======================= -->
+<div id="modalConfirmar" class="hidden fixed inset-0 modal-overlay flex items-center justify-center px-4 z-50">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center">
+    <h3 class="font-display text-xl font-bold mb-2">Confirmar voto</h3>
+    <p class="text-slate-600 mb-1">Estás a punto de votar por:</p>
+    <p id="modalPartidoNombre" class="text-lg font-bold text-[var(--azul-primario)] mb-5"></p>
+    <p class="text-xs text-slate-500 mb-6">Esta acción no se puede deshacer. Solo se permite un voto por estudiante.</p>
+    <p id="errorVoto" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4"></p>
+    <div class="flex gap-3">
+      <button onclick="cerrarModal()" class="flex-1 btn-secundario font-semibold py-2.5 rounded-lg">Cancelar</button>
+      <button id="btnConfirmarVoto" onclick="confirmarVoto()" class="flex-1 btn-primario font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2">Confirmar voto</button>
+    </div>
+  </div>
+</div>
+
+<footer class="bg-[var(--azul-marino)] text-white text-center text-xs py-4 space-y-1">
+  <p>Universidad Gerardo Barrios — Ingeniería en Sistemas y Redes Informáticas</p>
+  <button onclick="abrirModalAdmin()" class="text-[var(--azul-claro)] hover:text-white underline underline-offset-2">Info</button>
+</footer>
+
+<!-- ======================= MODAL DE ADMINISTRACIÓN (abrir/cerrar votación) ======================= -->
+<div id="modalAdmin" class="hidden fixed inset-0 modal-overlay flex items-center justify-center px-4 z-50">
+  <div class="bg-white rounded-2xl max-w-sm w-full p-6">
+    <h3 class="font-display text-xl font-bold mb-1">Panel de administración</h3>
+    <p class="text-sm text-slate-500 mb-4">Solo para los encargados de supervisión técnica.</p>
+
+    <label class="block text-sm font-semibold mb-1">Clave de administrador</label>
+    <input id="inClaveAdmin" type="password" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5 mb-3">
+
+    <p id="estadoAdminActual" class="text-sm mb-4 text-slate-600">Consultando estado actual...</p>
+    <p id="errorAdmin" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4"></p>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <button onclick="cambiarVotacion(false)" class="border-2 border-red-200 text-red-700 font-semibold py-2.5 rounded-lg hover:bg-red-50">Cerrar votación</button>
+      <button onclick="cambiarVotacion(true)" class="border-2 border-green-200 text-green-700 font-semibold py-2.5 rounded-lg hover:bg-green-50">Abrir votación</button>
+    </div>
+    <button onclick="cerrarModalAdmin()" class="w-full btn-secundario text-sm font-semibold py-2.5 rounded-lg">Cerrar panel</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   1) CONFIGURACIÓN DE SUPABASE
+   ===================================================================== */
+const SUPABASE_URL = "https://pctktijloluxfcvjgayb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_D3O-l3dlJqdXLJtkK0hd2Q_EMDqUcUk";
+
+const db = (SUPABASE_URL.startsWith("http"))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+if (!db) document.getElementById('avisoConfig').classList.remove('hidden');
+
+/* =====================================================================
+   2) NAVEGACIÓN Y STEPPER
+   ===================================================================== */
+const pasosFlujo = { identificacion: 1, boleta: 2, yavoto: 3, exito: 3 };
+
+function irA(nombre){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('pantalla-' + nombre).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  const indicador = document.getElementById('indicadorPasos');
+  const barra = document.getElementById('barraSeleccion');
+  if(pasosFlujo[nombre]){
+    indicador.classList.remove('hidden');
+    actualizarPasos(pasosFlujo[nombre]);
+  } else {
+    indicador.classList.add('hidden');
+  }
+  if(nombre !== 'boleta') barra.classList.remove('mostrar');
+
+  if(nombre === 'resultados') cargarResultados();
+}
+
+function actualizarPasos(actual){
+  document.querySelectorAll('#indicadorPasos .paso').forEach(el => {
+    const n = parseInt(el.dataset.paso);
+    el.classList.remove('activo','completado');
+    if(n < actual) el.classList.add('completado');
+    else if(n === actual) el.classList.add('activo');
+  });
+}
+
+/* =====================================================================
+   3) IDENTIFICACIÓN DEL VOTANTE
+   ===================================================================== */
+let votanteActual = null;
+
+function normalizar(txt){
+  return txt.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function marcarError(input, mensaje){
+  document.getElementById('errorIdentificacion').textContent = mensaje;
+  document.getElementById('errorIdentificacion').classList.remove('hidden');
+  if(input) input.classList.add('campo-error');
+}
+function limpiarErrores(){
+  document.getElementById('errorIdentificacion').classList.add('hidden');
+  ['inCodigo','inNombres','inApellidos'].forEach(id => document.getElementById(id).classList.remove('campo-error'));
+}
+
+document.getElementById('formIdentificacion').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  limpiarErrores();
+
+  if(!db){ marcarError(null, 'Supabase no está configurado todavía.'); return; }
+
+  const inCodigo = document.getElementById('inCodigo');
+  const inNombres = document.getElementById('inNombres');
+  const inApellidos = document.getElementById('inApellidos');
+
+  const codigo = inCodigo.value.trim();
+  const nombres = inNombres.value.trim();
+  const apellidos = inApellidos.value.trim();
+
+  if(!codigo || !nombres || !apellidos){
+    marcarError(null, 'Completa todos los campos para continuar.');
+    return;
+  }
+
+  const btn = document.getElementById('btnVerificar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span><span>Verificando...</span>';
+
+  const { data, error } = await db.rpc('verificar_votante', { p_codigo: codigo });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span>Verificar identidad</span>';
+
+  if(error){ marcarError(null, 'Error de conexión con la base de datos.'); return; }
+
+  if(!data || data.length === 0){
+    marcarError(inCodigo, 'No encontramos ese código en la lista de estudiantes habilitados.');
+    return;
+  }
+
+  const registro = data[0];
+
+  if(normalizar(registro.nombres) !== normalizar(nombres) || normalizar(registro.apellidos) !== normalizar(apellidos)){
+    marcarError(inNombres, '');
+    marcarError(inApellidos, 'El nombre y apellido no coinciden con el registro de ese código.');
+    return;
+  }
+
+  votanteActual = { codigo, nombres: registro.nombres, apellidos: registro.apellidos };
+
+  if(registro.ya_voto){ irA('yavoto'); return; }
+
+  document.getElementById('nombreVotante').textContent = registro.nombres + ' ' + registro.apellidos;
+  await cargarPartidos();
+  irA('boleta');
+});
+
+/* =====================================================================
+   4) BOLETA: selección explícita + barra flotante de confirmación
+   ===================================================================== */
+let partidoSeleccionado = null;
+
+async function cargarPartidos(){
+  partidoSeleccionado = null;
+  document.getElementById('barraSeleccion').classList.remove('mostrar');
+  const cont = document.getElementById('listaPartidos');
+  cont.innerHTML = '<p class="text-center text-slate-400 col-span-full">Cargando partidos...</p>';
+
+  const { data, error } = await db.from('partidos').select('*').order('orden');
+  if(error || !data){
+    cont.innerHTML = '<p class="text-center text-red-500 col-span-full">No se pudieron cargar los partidos.</p>';
+    return;
+  }
+
+  cont.innerHTML = '';
+  data.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'boleta-card bg-white rounded-2xl p-5 flex flex-col items-center text-center relative';
+    card.dataset.id = p.id;
+    card.innerHTML = `
+      <div class="marca-seleccion absolute top-3 right-3 h-6 w-6 rounded-full bg-[var(--azul-primario)] text-white items-center justify-center text-xs">✓</div>
+      <img src="${p.bandera_url}" alt="Bandera ${p.nombre}" class="h-16 object-contain mb-3">
+      <img src="${p.candidato_foto_url}" alt="${p.candidato_nombre}" class="h-28 w-28 rounded-full object-cover border-4 border-[var(--azul-hielo)] mb-3">
+      <p class="font-display font-bold text-lg leading-tight">${p.nombre}</p>
+      <p class="text-sm text-slate-500">${p.candidato_nombre}</p>
+    `;
+    card.addEventListener('click', () => seleccionarPartido(p, card));
+    cont.appendChild(card);
+  });
+}
+
+function seleccionarPartido(partido, card){
+  document.querySelectorAll('.boleta-card').forEach(c => c.classList.remove('seleccionada'));
+  card.classList.add('seleccionada');
+  partidoSeleccionado = partido;
+  document.getElementById('nombreSeleccion').textContent = partido.nombre + ' — ' + partido.candidato_nombre;
+  document.getElementById('barraSeleccion').classList.add('mostrar');
+}
+
+/* =====================================================================
+   5) CONFIRMACIÓN Y REGISTRO DEL VOTO
+   ===================================================================== */
+function abrirModal(){
+  if(!partidoSeleccionado) return;
+  document.getElementById('errorVoto').classList.add('hidden');
+  document.getElementById('modalPartidoNombre').textContent = partidoSeleccionado.nombre + ' — ' + partidoSeleccionado.candidato_nombre;
+  document.getElementById('modalConfirmar').classList.remove('hidden');
+}
+function cerrarModal(){
+  document.getElementById('modalConfirmar').classList.add('hidden');
+}
+
+async function confirmarVoto(){
+  const btn = document.getElementById('btnConfirmarVoto');
+  const errBox = document.getElementById('errorVoto');
+  errBox.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span><span>Registrando...</span>';
+
+  const { data, error } = await db.rpc('registrar_voto', {
+    p_codigo: votanteActual.codigo,
+    p_partido_id: partidoSeleccionado.id
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = 'Confirmar voto';
+
+  if(error || !data || !data.success){
+    errBox.textContent = (data && data.message) ? data.message : 'No se pudo registrar el voto. Intenta de nuevo.';
+    errBox.classList.remove('hidden');
+    if(data && data.message && data.message.includes('ya emitió')){
+      cerrarModal();
+      irA('yavoto');
+    }
+    return;
+  }
+
+  cerrarModal();
+  irA('exito');
+}
+
+/* =====================================================================
+   6) RESULTADOS
+   ===================================================================== */
+let chartInstance = null;
+
+async function cargarResultados(){
+  const listaBox = document.getElementById('listaResultados');
+  const totalBox = document.getElementById('totalVotos');
+  const ganadorBox = document.getElementById('tarjetaGanador');
+  const sinVotos = document.getElementById('sinVotos');
+  const bloque = document.getElementById('bloqueResultados');
+
+  ganadorBox.classList.add('hidden');
+  sinVotos.classList.add('hidden');
+  bloque.classList.add('hidden');
+  totalBox.textContent = 'Cargando resultados...';
+
+  if(!db){ totalBox.textContent = ''; sinVotos.textContent = 'Conecta Supabase para ver resultados.'; sinVotos.classList.remove('hidden'); return; }
+
+  const { data, error } = await db.from('resultados').select('*');
+  if(error || !data){
+    totalBox.textContent = '';
+    sinVotos.textContent = 'No se pudieron cargar los resultados.';
+    sinVotos.classList.remove('hidden');
+    return;
+  }
+
+  const totalVotos = data.reduce((acc, p) => acc + p.votos, 0);
+  totalBox.textContent = `Total de votos emitidos: ${totalVotos}`;
+
+  if(totalVotos === 0){
+    sinVotos.classList.remove('hidden');
+    return;
+  }
+  bloque.classList.remove('hidden');
+
+  const ganador = data[0];
+  ganadorBox.classList.remove('hidden');
+  ganadorBox.innerHTML = `
+    <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
+    <img src="${ganador.candidato_foto_url}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
+    <p class="font-display text-xl font-bold">${ganador.nombre}</p>
+    <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
+  `;
+
+  listaBox.innerHTML = '';
+  data.forEach(p => {
+    const fila = document.createElement('div');
+    fila.className = 'border border-[var(--gris-linea)] rounded-xl p-4';
+    fila.innerHTML = `
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-semibold">${p.nombre}</span>
+        <span class="text-sm text-slate-500">${p.votos} votos · ${p.porcentaje}%</span>
+      </div>
+      <div class="w-full h-2.5 bg-[var(--azul-hielo)] rounded-full overflow-hidden">
+        <div class="h-full bg-[var(--azul-primario)]" style="width:${p.porcentaje}%"></div>
+      </div>
+    `;
+    listaBox.appendChild(fila);
+  });
+
+  const ctx = document.getElementById('graficoResultados');
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(p => p.nombre),
+      datasets: [{ label: 'Votos', data: data.map(p => p.votos), backgroundColor: '#1D4ED8', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+/* =====================================================================
+   7) CONTROL DE APERTURA/CIERRE DE LA VOTACIÓN (panel de equipo)
+   ===================================================================== */
+let votacionAbierta = true;
+
+async function verificarEstadoVotacion(){
+  if(!db) return;
+  const { data, error } = await db.rpc('verificar_estado_votacion');
+  if(error) return;
+  votacionAbierta = data;
+  document.getElementById('btnIngresarVotar').classList.toggle('hidden', !votacionAbierta);
+  document.getElementById('avisoVotacionCerrada').classList.toggle('hidden', votacionAbierta);
+}
+
+function intentarIngresarVotar(){
+  if(!votacionAbierta){ irA('inicio'); return; }
+  irA('identificacion');
+}
+
+function abrirModalAdmin(){
+  document.getElementById('errorAdmin').classList.add('hidden');
+  document.getElementById('inClaveAdmin').value = '';
+  document.getElementById('estadoAdminActual').textContent =
+    votacionAbierta ? 'Estado actual: la votación está ABIERTA.' : 'Estado actual: la votación está CERRADA.';
+  document.getElementById('modalAdmin').classList.remove('hidden');
+}
+function cerrarModalAdmin(){
+  document.getElementById('modalAdmin').classList.add('hidden');
+}
+
+async function cambiarVotacion(abrir){
+  const clave = document.getElementById('inClaveAdmin').value.trim();
+  const errBox = document.getElementById('errorAdmin');
+  errBox.classList.add('hidden');
+
+  if(!clave){ errBox.textContent = 'Escribe la clave de administrador.'; errBox.classList.remove('hidden'); return; }
+
+  const { data, error } = await db.rpc('cambiar_estado_votacion', { p_clave: clave, p_abrir: abrir });
+
+  if(error || !data || !data.success){
+    errBox.textContent = (data && data.message) ? data.message : 'No se pudo actualizar el estado.';
+    errBox.classList.remove('hidden');
+    return;
+  }
+
+  await verificarEstadoVotacion();
+  document.getElementById('estadoAdminActual').textContent =
+    abrir ? 'Estado actual: la votación está ABIERTA.' : 'Estado actual: la votación está CERRADA.';
+}
+
+function actualizarReloj(){
+  document.getElementById('reloj').textContent = new Date().toLocaleString('es-SV', { dateStyle:'full', timeStyle:'short' });
+}
+actualizarReloj();
+setInterval(actualizarReloj, 30000);
+
+verificarEstadoVotacion();
+setInterval(verificarEstadoVotacion, 30000);
+</script>
+</body>
+</html>
