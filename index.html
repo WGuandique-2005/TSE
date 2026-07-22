@@ -22,9 +22,24 @@
     --gris-linea:#DCE3F0;
     --verde:#16A34A;
     --rojo:#DC2626;
+    --color-bg:#FFFFFF;
+    --color-surface:#F8FAFC;
+    --color-text:#0B1F4E;
+    --color-text-muted:#475569;
+    --color-focus:rgba(29,78,216,.24);
+    --radius-sm:8px;
+    --radius-md:12px;
+    --radius-lg:16px;
   }
-  body{ font-family:'Inter', system-ui, sans-serif; background:var(--blanco); color:var(--azul-marino); }
+  body{ font-family:'Inter', system-ui, sans-serif; background:var(--color-bg); color:var(--color-text); }
   .font-display{ font-family:'Libre Baskerville', Georgia, serif; }
+
+  button, input, select{ min-height:44px; }
+  button{ -webkit-tap-highlight-color:transparent; }
+  button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:3px solid var(--color-focus);
+    outline-offset:2px;
+  }
 
   .screen{ display:none; }
   .screen.active{ display:block; animation:aparecer .25s ease; }
@@ -38,7 +53,7 @@
   .btn-secundario{ border:1.5px solid var(--gris-linea); color:var(--azul-marino); transition:background .15s ease, border-color .15s ease; }
   .btn-secundario:hover{ background:var(--azul-hielo); border-color:var(--azul-claro); }
 
-  input:focus, select:focus{ outline:none; border-color:var(--azul-primario); box-shadow:0 0 0 3px rgba(29,78,216,.15); }
+  input:focus, select:focus{ outline:none; border-color:var(--azul-primario); box-shadow:0 0 0 3px var(--color-focus); }
   input.campo-error{ border-color:var(--rojo) !important; }
 
   .boleta-card{
@@ -64,11 +79,63 @@
   .paso-linea{ flex:1; height:2px; background:var(--gris-linea); }
   .paso.completado + .paso-linea{ background:var(--azul-primario); }
 
+  .paso-linea{ min-width:24px; }
+
   #barraSeleccion{ transform:translateY(100%); transition:transform .2s ease; }
   #barraSeleccion.mostrar{ transform:translateY(0); }
 
   ::-webkit-scrollbar{ width:10px; }
   ::-webkit-scrollbar-thumb{ background:var(--azul-claro); border-radius:10px; }
+
+  @media (max-width: 640px){
+    header .brand-row{ padding-top:.625rem; padding-bottom:.625rem; }
+    header .brand-row > button{ gap:.5rem; min-width:0; }
+    header .brand-row > button img:first-child{ height:2.25rem; }
+    header .brand-row > button img:last-child{ height:1.7rem; max-width:8.5rem; }
+    header .brand-row > button .brand-divider{ height:1.75rem; }
+    header nav{ gap:0; }
+    header nav button{ padding-left:.55rem; padding-right:.55rem; font-size:.75rem; }
+
+    main{ padding-top:1.25rem; padding-bottom:8rem; }
+    #pantalla-inicio > .hero-panel{ border-radius:var(--radius-lg); }
+    #pantalla-inicio > .hero-panel > div{ padding:2rem 1.125rem 2.25rem; }
+    #pantalla-inicio h1{ font-size:clamp(1.75rem, 8vw, 2.25rem); }
+    #pantalla-inicio .feature-grid{ margin-top:1.25rem; gap:.75rem; }
+    #pantalla-inicio .feature-grid > div{ padding:1rem; }
+
+    #indicadorPasos{ padding-top:1rem; }
+    #indicadorPasos .paso{ gap:4px; }
+    #indicadorPasos .paso-circulo{ width:26px; height:26px; }
+    #indicadorPasos .paso-linea{ min-width:18px; }
+
+    #pantalla-identificacion > div{ margin-top:0; padding:1.25rem; border-radius:var(--radius-lg); }
+    #pantalla-identificacion h2{ font-size:1.35rem; }
+    #pantalla-boleta .boleta-heading{ margin-top:0; margin-bottom:1.25rem; }
+    #listaPartidos{ gap:.75rem; }
+    .boleta-card{ padding:1rem; flex-direction:row; text-align:left; align-items:center; gap:.875rem; }
+    .boleta-card img:first-of-type{ width:3.25rem; height:3.25rem; margin:0; flex:none; }
+    .boleta-card img:nth-of-type(2){ width:4.5rem; height:4.5rem; margin:0; flex:none; }
+    .boleta-card p{ max-width:calc(100% - 9rem); }
+    .boleta-card p:last-child{ font-size:.8rem; }
+
+    #barraSeleccion{ padding:.75rem 0; }
+    #barraSeleccion > div{ align-items:stretch; flex-direction:column; gap:.625rem; }
+    #barraSeleccion p{ line-height:1.35; }
+    #barraSeleccion button{ width:100%; }
+
+    #modalConfirmar > div, #modalAdmin > div{ padding:1.25rem; max-height:calc(100vh - 2rem); overflow:auto; }
+    #modalConfirmar .modal-actions{ flex-direction:column-reverse; }
+    #modalConfirmar .modal-actions button{ width:100%; }
+    #modalAdmin .admin-actions{ grid-template-columns:1fr; }
+
+    #pantalla-resultados .results-grid{ gap:1rem; }
+    #pantalla-resultados .chart-card{ padding:.75rem; }
+    #pantalla-resultados .winner-card{ padding:1.25rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -81,10 +148,10 @@
       <span id="reloj" class="hidden sm:block"></span>
     </div>
   </div>
-  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+  <div class="brand-row max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
     <button onclick="irA('inicio')" class="flex items-center gap-3">
       <img src="assets/escudo-gobierno.png" alt="Escudo de El Salvador" class="h-11 w-auto">
-      <div class="h-9 w-px bg-[var(--gris-linea)]"></div>
+      <div class="brand-divider h-9 w-px bg-[var(--gris-linea)]"></div>
       <img src="assets/logo-tse.png" alt="Tribunal Supremo Electoral" class="h-8 w-auto">
     </button>
     <nav class="flex items-center gap-2">
@@ -113,7 +180,7 @@
 
   <!-- ======================= INICIO ======================= -->
   <section id="pantalla-inicio" class="screen active">
-    <div class="relative overflow-hidden rounded-2xl border border-[var(--gris-linea)] bg-gradient-to-br from-[var(--azul-hielo)] to-white">
+    <div class="hero-panel relative overflow-hidden rounded-2xl border border-[var(--gris-linea)] bg-gradient-to-br from-[var(--azul-hielo)] to-white">
       <div class="px-6 sm:px-14 py-14 sm:py-20 text-center">
         <img src="assets/escudo-gobierno.png" alt="" class="h-16 w-auto mx-auto mb-5 opacity-90">
         <p class="uppercase tracking-[0.25em] text-xs sm:text-sm font-semibold text-[var(--azul-primario)] mb-4">Facultad de Ciencias y Tecnología</p>
@@ -127,7 +194,7 @@
       </div>
     </div>
 
-    <div class="grid sm:grid-cols-3 gap-4 mt-8">
+    <div class="feature-grid grid sm:grid-cols-3 gap-4 mt-8">
       <div class="border border-[var(--gris-linea)] rounded-xl p-5">
         <p class="font-display font-bold text-lg mb-1">01. Identifícate</p>
         <p class="text-sm text-slate-600">Con tu DUI/carné, código y nombre completo se verifica que estés habilitado.</p>
@@ -175,7 +242,7 @@
 
   <!-- ======================= BOLETA ======================= -->
   <section id="pantalla-boleta" class="screen">
-    <div class="text-center mb-8 mt-6">
+    <div class="boleta-heading text-center mb-8 mt-6">
       <h2 class="font-display text-2xl sm:text-3xl font-bold">Boleta electoral</h2>
       <p class="text-slate-600 mt-1">Hola <span id="nombreVotante" class="font-semibold"></span>, elige un único partido. Podrás confirmarlo antes de votar.</p>
     </div>
@@ -213,10 +280,10 @@
       Aún no hay votos registrados. Los resultados aparecerán aquí en cuanto se emita el primer voto.
     </div>
 
-    <div id="tarjetaGanador" class="hidden max-w-xl mx-auto border-2 border-[var(--azul-primario)] rounded-2xl p-6 mb-8 bg-[var(--azul-hielo)] text-center"></div>
+    <div id="tarjetaGanador" class="winner-card hidden max-w-xl mx-auto border-2 border-[var(--azul-primario)] rounded-2xl p-6 mb-8 bg-[var(--azul-hielo)] text-center"></div>
 
-    <div id="bloqueResultados" class="hidden grid lg:grid-cols-2 gap-8 items-start">
-      <div class="border border-[var(--gris-linea)] rounded-2xl p-5">
+    <div id="bloqueResultados" class="results-grid hidden grid lg:grid-cols-2 gap-8 items-start">
+      <div class="chart-card border border-[var(--gris-linea)] rounded-2xl p-5">
         <canvas id="graficoResultados" height="260"></canvas>
       </div>
       <div id="listaResultados" class="space-y-4"></div>
@@ -246,7 +313,7 @@
     <p id="modalPartidoNombre" class="text-lg font-bold text-[var(--azul-primario)] mb-5"></p>
     <p class="text-xs text-slate-500 mb-6">Esta acción no se puede deshacer. Solo se permite un voto por estudiante.</p>
     <p id="errorVoto" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4"></p>
-    <div class="flex gap-3">
+    <div class="modal-actions flex gap-3">
       <button onclick="cerrarModal()" class="flex-1 btn-secundario font-semibold py-2.5 rounded-lg">Cancelar</button>
       <button id="btnConfirmarVoto" onclick="confirmarVoto()" class="flex-1 btn-primario font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2">Confirmar voto</button>
     </div>
@@ -270,7 +337,7 @@
     <p id="estadoAdminActual" class="text-sm mb-4 text-slate-600">Consultando estado actual...</p>
     <p id="errorAdmin" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4"></p>
 
-    <div class="grid grid-cols-2 gap-3 mb-3">
+    <div class="admin-actions grid grid-cols-2 gap-3 mb-3">
       <button onclick="cambiarVotacion(false)" class="border-2 border-red-200 text-red-700 font-semibold py-2.5 rounded-lg hover:bg-red-50">Cerrar votación</button>
       <button onclick="cambiarVotacion(true)" class="border-2 border-green-200 text-green-700 font-semibold py-2.5 rounded-lg hover:bg-green-50">Abrir votación</button>
     </div>
