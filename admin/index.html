@@ -19,20 +19,65 @@
   .btn-primary{background:var(--azul-primario);color:#fff}.btn-primary:hover{background:var(--azul-marino)}
   .btn-secondary{border:1.5px solid var(--gris-linea);color:var(--azul-marino)} .btn-secondary:hover{background:var(--azul-hielo);border-color:var(--azul-claro)}
   .modal-overlay{background:rgba(11,31,78,.55)}
-  @media(max-width:640px){main{padding-top:1.25rem;padding-bottom:2rem}.table-wrap{overflow-x:auto}.voters-table{min-width:560px}.chart-box{height:270px}}
+
+  /* ===== Barra superior (reloj siempre visible) ===== */
+  .top-bar-inner{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:2px 12px;
+  }
+  #reloj{ font-variant-numeric:tabular-nums; }
+
+  @media(max-width:640px){
+    /* Barra superior */
+    .top-bar-inner{ justify-content:center; text-align:center; }
+    #reloj{ width:100%; text-align:center; font-size:.7rem; opacity:.85; padding-bottom:2px; }
+
+    /* Header */
+    header .header-brand img:first-child{ height:2.25rem; }
+    header .header-brand img:last-child{ height:1.7rem; max-width:8.5rem; }
+    header .header-brand span.h-9{ height:1.75rem; }
+    header .header-right{ flex-wrap:wrap; justify-content:flex-end; }
+    header .header-right .admin-label{ font-size:.75rem; }
+
+    /* Main content */
+    main{ padding-top:1.25rem; padding-bottom:2rem; }
+
+    /* Summary cards */
+    #resumen{ grid-template-columns:1fr 1fr; gap:.75rem; }
+    #resumen > div{ padding:.875rem; }
+    #resumen .font-display{ font-size:1.5rem; }
+
+    /* Charts */
+    .chart-box{ height:220px; }
+
+    /* Table */
+    .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .voters-table{ min-width:520px; }
+    .voters-table th, .voters-table td{ padding-left:.75rem; padding-right:.75rem; font-size:.8rem; }
+
+    /* Modals */
+    #accesoAdmin > div, #modalAdmin > div{ margin:0 .5rem; max-height:calc(100vh - 2rem); overflow-y:auto; }
+
+    /* Title section */
+    main > div:first-child h1{ font-size:1.5rem; }
+  }
+
+  @media(max-width:380px){
+    #resumen{ grid-template-columns:1fr; }
+  }
+
   @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
 <header class="w-full border-b-4 border-[var(--azul-primario)] sticky top-0 bg-white z-40">
   <div class="bg-[var(--azul-marino)] text-white text-xs sm:text-sm">
-    <div class="max-w-6xl mx-auto px-4 py-1.5 flex items-center justify-between"><span>Portal Electoral — Universidad Gerardo Barrios</span><span id="reloj" class="hidden sm:block"></span></div>
+    <div class="top-bar-inner max-w-6xl mx-auto px-4 py-1.5"><span>Portal Electoral — Universidad Gerardo Barrios</span><span id="reloj"></span></div>
   </div>
   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-    <a href="../" class="flex items-center gap-3" aria-label="Volver al inicio">
+    <a href="../" class="header-brand flex items-center gap-3" aria-label="Volver al inicio">
       <img src="../assets/escudo-gobierno.png" alt="Escudo de El Salvador" class="h-11 w-auto"><span class="h-9 w-px bg-[var(--gris-linea)]"></span><img src="../assets/logo-tse.png" alt="Tribunal Supremo Electoral" class="h-8 w-auto">
     </a>
-    <div class="flex items-center gap-2"><nav class="hidden sm:flex items-center gap-1 mr-2" aria-label="Navegación administrativa"><a href="#resumen" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Resumen</a><a href="#votantes" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Votantes inscritos</a></nav><span class="text-sm font-semibold text-[var(--azul-marino)]">Panel administrativo</span></div>
+    <div class="header-right flex items-center gap-2"><nav class="hidden sm:flex items-center gap-1 mr-2" aria-label="Navegación administrativa"><a href="#resumen" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Resumen</a><a href="#votantes" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Votantes inscritos</a></nav><span class="admin-label text-sm font-semibold text-[var(--azul-marino)]">Panel administrativo</span></div>
   </div>
 </header>
 

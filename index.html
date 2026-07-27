@@ -87,7 +87,17 @@
   ::-webkit-scrollbar{ width:10px; }
   ::-webkit-scrollbar-thumb{ background:var(--azul-claro); border-radius:10px; }
 
+  /* ===== Barra superior (reloj siempre visible) ===== */
+  .top-bar-inner{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:2px 12px;
+  }
+  #reloj{ font-variant-numeric:tabular-nums; }
+
   @media (max-width: 640px){
+    /* Barra superior: el reloj baja a segunda línea si no cabe */
+    .top-bar-inner{ justify-content:center; text-align:center; }
+    #reloj{ width:100%; text-align:center; font-size:.7rem; opacity:.85; padding-bottom:2px; }
+
     header .brand-row{ padding-top:.625rem; padding-bottom:.625rem; }
     header .brand-row > button{ gap:.5rem; min-width:0; }
     header .brand-row > button img:first-child{ height:2.25rem; }
@@ -143,9 +153,9 @@
 <!-- ======================= HEADER ======================= -->
 <header class="w-full border-b-4 border-[var(--azul-primario)] sticky top-0 bg-white z-40">
   <div class="bg-[var(--azul-marino)] text-white text-xs sm:text-sm">
-    <div class="max-w-6xl mx-auto px-4 py-1.5 flex items-center justify-between">
+    <div class="top-bar-inner max-w-6xl mx-auto px-4 py-1.5">
       <span>Portal Electoral — Universidad Gerardo Barrios</span>
-      <span id="reloj" class="hidden sm:block"></span>
+      <span id="reloj"></span>
     </div>
   </div>
   <div class="brand-row max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
