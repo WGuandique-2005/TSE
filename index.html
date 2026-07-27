@@ -280,6 +280,10 @@
       Aún no hay votos registrados. Los resultados aparecerán aquí en cuanto se emita el primer voto.
     </div>
 
+    <div id="avisoResultadoParcial" class="hidden max-w-xl mx-auto text-center text-sm text-blue-800 bg-[var(--azul-hielo)] border border-blue-200 rounded-xl px-4 py-3 mb-8">
+      ⏳ La votación sigue <strong>en curso</strong>. Estos son resultados parciales — el partido ganador se anunciará oficialmente cuando el Tribunal cierre el proceso.
+    </div>
+
     <div id="tarjetaGanador" class="winner-card hidden max-w-xl mx-auto border-2 border-[var(--azul-primario)] rounded-2xl p-6 mb-8 bg-[var(--azul-hielo)] text-center"></div>
 
     <div id="bloqueResultados" class="results-grid hidden grid lg:grid-cols-2 gap-8 items-start">
@@ -550,6 +554,11 @@ async function confirmarVoto(){
 
 /* =====================================================================
    6) RESULTADOS
+   -----------------------------------------------------------------------
+   REGLA CLAVE: el "ganador" solo se declara cuando la votación está
+   CERRADA. Mientras esté ABIERTA se muestra el conteo (transparencia),
+   pero NUNCA la tarjeta de ganador, porque el resultado aún puede
+   cambiar con cada voto nuevo.
    ===================================================================== */
 let chartInstance = null;
 
@@ -559,15 +568,24 @@ async function cargarResultados(){
   const ganadorBox = document.getElementById('tarjetaGanador');
   const sinVotos = document.getElementById('sinVotos');
   const bloque = document.getElementById('bloqueResultados');
+  const avisoParcial = document.getElementById('avisoResultadoParcial');
 
   ganadorBox.classList.add('hidden');
   sinVotos.classList.add('hidden');
   bloque.classList.add('hidden');
+  avisoParcial.classList.add('hidden');
   totalBox.textContent = 'Cargando resultados...';
 
   if(!db){ totalBox.textContent = ''; sinVotos.textContent = 'Conecta Supabase para ver resultados.'; sinVotos.classList.remove('hidden'); return; }
 
-  const { data, error } = await db.from('resultados').select('*');
+  // 1) Refrescamos el estado real de la votación ANTES de decidir qué mostrar.
+  //    No confiamos en el último valor cacheado por el polling de 30s.
+  await verificarEstadoVotacion();
+
+  // 2) Traemos los resultados ordenados por votos descendente: así data[0]
+  //    es SIEMPRE el partido con más votos, sin depender del orden que
+  //    entregue Supabase por defecto.
+  const { data, error } = await db.from('resultados').select('*').order('votos', { ascending: false });
   if(error || !data){
     totalBox.textContent = '';
     sinVotos.textContent = 'No se pudieron cargar los resultados.';
@@ -578,20 +596,30 @@ async function cargarResultados(){
   const totalVotos = data.reduce((acc, p) => acc + p.votos, 0);
   totalBox.textContent = `Total de votos emitidos: ${totalVotos}`;
 
+  // 3) Sin votos aún: no hay nada que declarar, ni conteo ni ganador.
   if(totalVotos === 0){
     sinVotos.classList.remove('hidden');
     return;
   }
+
   bloque.classList.remove('hidden');
 
-  const ganador = data[0];
-  ganadorBox.classList.remove('hidden');
-  ganadorBox.innerHTML = `
-    <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
-    <img src="${ganador.candidato_foto_url}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
-    <p class="font-display text-xl font-bold">${ganador.nombre}</p>
-    <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
-  `;
+  // 4) Solo mostramos la tarjeta de ganador (bandera + foto + nombre)
+  //    si la votación YA CERRÓ. Si sigue abierta, mostramos el aviso
+  //    de "resultado parcial" en su lugar.
+  if(!votacionAbierta){
+    const ganador = data[0];
+    ganadorBox.classList.remove('hidden');
+    ganadorBox.innerHTML = `
+      <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
+      <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-14 object-contain mx-auto mb-3">
+      <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
+      <p class="font-display text-xl font-bold">${ganador.nombre}</p>
+      <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
+    `;
+  } else {
+    avisoParcial.classList.remove('hidden');
+  }
 
   listaBox.innerHTML = '';
   data.forEach(p => {
