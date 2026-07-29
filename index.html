@@ -94,7 +94,6 @@
   #reloj{ font-variant-numeric:tabular-nums; }
 
   @media (max-width: 640px){
-    /* Barra superior: el reloj baja a segunda línea si no cabe */
     .top-bar-inner{ justify-content:center; text-align:center; }
     #reloj{ width:100%; text-align:center; font-size:.7rem; opacity:.85; padding-bottom:2px; }
 
@@ -207,7 +206,7 @@
     <div class="feature-grid grid sm:grid-cols-3 gap-4 mt-8">
       <div class="border border-[var(--gris-linea)] rounded-xl p-5">
         <p class="font-display font-bold text-lg mb-1">01. Identifícate</p>
-        <p class="text-sm text-slate-600">Con tu carnte/código y nombre completo se verifica que estés habilitado.</p>
+        <p class="text-sm text-slate-600">Con tu carnet/código y nombre completo se verifica que estés habilitado.</p>
       </div>
       <div class="border border-[var(--gris-linea)] rounded-xl p-5">
         <p class="font-display font-bold text-lg mb-1">02. Elige y confirma</p>
@@ -215,7 +214,7 @@
       </div>
       <div class="border border-[var(--gris-linea)] rounded-xl p-5">
         <p class="font-display font-bold text-lg mb-1">03. Resultados</p>
-        <p class="text-sm text-slate-600">Consulta el conteo, los porcentajes y el partido ganador en tiempo real.</p>
+        <p class="text-sm text-slate-600">Se publican cuando el Tribunal cierra oficialmente el proceso de votación.</p>
       </div>
     </div>
   </section>
@@ -264,8 +263,8 @@
     <div class="max-w-md mx-auto text-center border border-[var(--gris-linea)] rounded-2xl p-10 mt-6">
       <div class="mx-auto h-14 w-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-4">!</div>
       <h2 class="font-display text-2xl font-bold mb-2">Ya ejerciste tu voto</h2>
-      <p class="text-slate-600 mb-6">Nuestros registros indican que este DUI/carné ya emitió un voto. Cada estudiante puede votar una sola vez.</p>
-      <button onclick="irA('resultados')" class="btn-primario font-semibold px-6 py-2.5 rounded-lg">Ver resultados</button>
+      <p class="text-slate-600 mb-6">Nuestros registros indican que este código ya emitió un voto. Cada estudiante puede votar una sola vez.</p>
+      <button onclick="irA('inicio')" class="btn-primario font-semibold px-6 py-2.5 rounded-lg">Volver al inicio</button>
     </div>
   </section>
 
@@ -274,8 +273,9 @@
     <div class="max-w-md mx-auto text-center border border-[var(--gris-linea)] rounded-2xl p-10 mt-6">
       <div class="mx-auto h-14 w-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl mb-4">✓</div>
       <h2 class="font-display text-2xl font-bold mb-2">Voto registrado correctamente</h2>
-      <p class="text-slate-600 mb-6">Gracias por participar en la simulación electoral. Tu voto fue contabilizado de forma anónima en los resultados.</p>
-      <button onclick="irA('resultados')" class="btn-primario font-semibold px-6 py-2.5 rounded-lg">Ver resultados</button>
+      <p class="text-slate-600 mb-2">Gracias por participar en la simulación electoral. Tu voto fue contabilizado de forma anónima.</p>
+      <p class="text-xs text-slate-400 mb-6">Serás redirigido al inicio automáticamente...</p>
+      <button onclick="irA('inicio')" class="btn-primario font-semibold px-6 py-2.5 rounded-lg">Volver al inicio ahora</button>
     </div>
   </section>
 
@@ -286,12 +286,14 @@
       <h2 class="font-display text-2xl sm:text-3xl font-bold">Resultados electorales</h2>
     </div>
 
-    <div id="sinVotos" class="hidden max-w-md mx-auto text-center text-slate-500 border border-dashed border-[var(--gris-linea)] rounded-2xl p-10 mb-8">
-      Aún no hay votos registrados. Los resultados aparecerán aquí en cuanto se emita el primer voto.
+    <!-- Se muestra mientras la votación sigue ABIERTA: resultados bloqueados -->
+    <div id="votacionEnCurso" class="hidden max-w-xl mx-auto text-center text-sm text-blue-800 bg-[var(--azul-hielo)] border border-blue-200 rounded-xl px-4 py-6 mb-8">
+      🔒 La votación está <strong>en curso</strong>. Los resultados se publicarán aquí únicamente cuando el Tribunal Supremo Electoral cierre oficialmente el proceso.
     </div>
 
-    <div id="avisoResultadoParcial" class="hidden max-w-xl mx-auto text-center text-sm text-blue-800 bg-[var(--azul-hielo)] border border-blue-200 rounded-xl px-4 py-3 mb-8">
-      ⏳ La votación sigue <strong>en curso</strong>. Estos son resultados parciales — el partido ganador se anunciará oficialmente cuando el Tribunal cierre el proceso.
+    <!-- Se muestra si la votación YA CERRÓ pero nadie votó -->
+    <div id="sinVotos" class="hidden max-w-md mx-auto text-center text-slate-500 border border-dashed border-[var(--gris-linea)] rounded-2xl p-10 mb-8">
+      La votación no ha comenzado o finalizó sin que se registrara ningún voto todavía.
     </div>
 
     <div id="tarjetaGanador" class="winner-card hidden max-w-xl mx-auto border-2 border-[var(--azul-primario)] rounded-2xl p-6 mb-8 bg-[var(--azul-hielo)] text-center"></div>
@@ -339,26 +341,6 @@
   <a href="admin/" class="text-[var(--azul-claro)] hover:text-white underline underline-offset-2">Panel administrativo</a>
 </footer>
 
-<!-- ======================= MODAL DE ADMINISTRACIÓN (abrir/cerrar votación) ======================= -->
-<div id="modalAdmin" class="hidden fixed inset-0 modal-overlay flex items-center justify-center px-4 z-50">
-  <div class="bg-white rounded-2xl max-w-sm w-full p-6">
-    <h3 class="font-display text-xl font-bold mb-1">Panel de administración</h3>
-    <p class="text-sm text-slate-500 mb-4">Solo para los encargados de supervisión técnica.</p>
-
-    <label class="block text-sm font-semibold mb-1">Clave de administrador</label>
-    <input id="inClaveAdmin" type="password" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5 mb-3">
-
-    <p id="estadoAdminActual" class="text-sm mb-4 text-slate-600">Consultando estado actual...</p>
-    <p id="errorAdmin" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4"></p>
-
-    <div class="admin-actions grid grid-cols-2 gap-3 mb-3">
-      <button onclick="cambiarVotacion(false)" class="border-2 border-red-200 text-red-700 font-semibold py-2.5 rounded-lg hover:bg-red-50">Cerrar votación</button>
-      <button onclick="cambiarVotacion(true)" class="border-2 border-green-200 text-green-700 font-semibold py-2.5 rounded-lg hover:bg-green-50">Abrir votación</button>
-    </div>
-    <button onclick="cerrarModalAdmin()" class="w-full btn-secundario text-sm font-semibold py-2.5 rounded-lg">Cerrar panel</button>
-  </div>
-</div>
-
 <script>
 /* =====================================================================
    1) CONFIGURACIÓN DE SUPABASE
@@ -376,8 +358,13 @@ if (!db) document.getElementById('avisoConfig').classList.remove('hidden');
    2) NAVEGACIÓN Y STEPPER
    ===================================================================== */
 const pasosFlujo = { identificacion: 1, boleta: 2, yavoto: 3, exito: 3 };
+let redirectTimer = null; // controla el regreso automático al inicio tras votar
 
 function irA(nombre){
+  // Si veníamos de un redireccionamiento programado (pantalla "exito"),
+  // lo cancelamos apenas el usuario navega a cualquier otro lado.
+  if(redirectTimer){ clearTimeout(redirectTimer); redirectTimer = null; }
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('pantalla-' + nombre).classList.add('active');
   window.scrollTo({top:0, behavior:'smooth'});
@@ -393,6 +380,13 @@ function irA(nombre){
   if(nombre !== 'boleta') barra.classList.remove('mostrar');
 
   if(nombre === 'resultados') cargarResultados();
+
+  // Voto confirmado: mostramos el mensaje de éxito 5 segundos y
+  // regresamos automáticamente a Inicio, dejando la laptop lista
+  // para que la siguiente persona se identifique.
+  if(nombre === 'exito'){
+    redirectTimer = setTimeout(() => irA('inicio'), 5000);
+  }
 }
 
 function actualizarPasos(actual){
@@ -565,10 +559,12 @@ async function confirmarVoto(){
 /* =====================================================================
    6) RESULTADOS
    -----------------------------------------------------------------------
-   REGLA CLAVE: el "ganador" solo se declara cuando la votación está
-   CERRADA. Mientras esté ABIERTA se muestra el conteo (transparencia),
-   pero NUNCA la tarjeta de ganador, porque el resultado aún puede
-   cambiar con cada voto nuevo.
+   REGLA CLAVE: los resultados SOLO se muestran cuando la votación
+   está CERRADA.
+     - Cerrada + sin votos  -> aviso de que no hay votos registrados.
+     - Cerrada + con votos  -> gráfico, tabla y partido ganador.
+     - Abierta (en curso)   -> bloqueado por completo, ni conteo ni
+       ganador, para no influir en quienes todavía no han votado.
    ===================================================================== */
 let chartInstance = null;
 
@@ -578,23 +574,28 @@ async function cargarResultados(){
   const ganadorBox = document.getElementById('tarjetaGanador');
   const sinVotos = document.getElementById('sinVotos');
   const bloque = document.getElementById('bloqueResultados');
-  const avisoParcial = document.getElementById('avisoResultadoParcial');
+  const enCurso = document.getElementById('votacionEnCurso');
 
   ganadorBox.classList.add('hidden');
   sinVotos.classList.add('hidden');
   bloque.classList.add('hidden');
-  avisoParcial.classList.add('hidden');
+  enCurso.classList.add('hidden');
   totalBox.textContent = 'Cargando resultados...';
 
   if(!db){ totalBox.textContent = ''; sinVotos.textContent = 'Conecta Supabase para ver resultados.'; sinVotos.classList.remove('hidden'); return; }
 
   // 1) Refrescamos el estado real de la votación ANTES de decidir qué mostrar.
-  //    No confiamos en el último valor cacheado por el polling de 30s.
   await verificarEstadoVotacion();
 
-  // 2) Traemos los resultados ordenados por votos descendente: así data[0]
-  //    es SIEMPRE el partido con más votos, sin depender del orden que
-  //    entregue Supabase por defecto.
+  // 2) Mientras la votación esté ABIERTA, los resultados quedan bloqueados
+  //    por completo (ni conteo parcial ni ganador).
+  if(votacionAbierta){
+    totalBox.textContent = '';
+    enCurso.classList.remove('hidden');
+    return;
+  }
+
+  // 3) Votación CERRADA: traemos los resultados ordenados de mayor a menor.
   const { data, error } = await db.from('resultados').select('*').order('votos', { ascending: false });
   if(error || !data){
     totalBox.textContent = '';
@@ -604,32 +605,28 @@ async function cargarResultados(){
   }
 
   const totalVotos = data.reduce((acc, p) => acc + p.votos, 0);
-  totalBox.textContent = `Total de votos emitidos: ${totalVotos}`;
 
-  // 3) Sin votos aún: no hay nada que declarar, ni conteo ni ganador.
+  // 4) Cerrada pero sin ningún voto registrado.
   if(totalVotos === 0){
+    totalBox.textContent = '';
+    sinVotos.textContent = 'La votación no ha comenzado: aún no hay votos registrados.';
     sinVotos.classList.remove('hidden');
     return;
   }
 
+  // 5) Cerrada y con votos: mostramos todo (ganador, gráfico y tabla).
+  totalBox.textContent = `Total de votos emitidos: ${totalVotos}`;
   bloque.classList.remove('hidden');
 
-  // 4) Solo mostramos la tarjeta de ganador (bandera + foto + nombre)
-  //    si la votación YA CERRÓ. Si sigue abierta, mostramos el aviso
-  //    de "resultado parcial" en su lugar.
-  if(!votacionAbierta){
-    const ganador = data[0];
-    ganadorBox.classList.remove('hidden');
-    ganadorBox.innerHTML = `
-      <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
-      <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-14 object-contain mx-auto mb-3">
-      <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
-      <p class="font-display text-xl font-bold">${ganador.nombre}</p>
-      <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
-    `;
-  } else {
-    avisoParcial.classList.remove('hidden');
-  }
+  const ganador = data[0];
+  ganadorBox.classList.remove('hidden');
+  ganadorBox.innerHTML = `
+    <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
+    <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-14 object-contain mx-auto mb-3">
+    <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
+    <p class="font-display text-xl font-bold">${ganador.nombre}</p>
+    <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
+  `;
 
   listaBox.innerHTML = '';
   data.forEach(p => {
@@ -664,7 +661,7 @@ async function cargarResultados(){
 }
 
 /* =====================================================================
-   7) CONTROL DE APERTURA/CIERRE DE LA VOTACIÓN (panel de equipo)
+   7) ESTADO DE LA VOTACIÓN (lo abre/cierra el panel administrativo en admin/)
    ===================================================================== */
 let votacionAbierta = true;
 
@@ -680,37 +677,6 @@ async function verificarEstadoVotacion(){
 function intentarIngresarVotar(){
   if(!votacionAbierta){ irA('inicio'); return; }
   irA('identificacion');
-}
-
-function abrirModalAdmin(){
-  document.getElementById('errorAdmin').classList.add('hidden');
-  document.getElementById('inClaveAdmin').value = '';
-  document.getElementById('estadoAdminActual').textContent =
-    votacionAbierta ? 'Estado actual: la votación está ABIERTA.' : 'Estado actual: la votación está CERRADA.';
-  document.getElementById('modalAdmin').classList.remove('hidden');
-}
-function cerrarModalAdmin(){
-  document.getElementById('modalAdmin').classList.add('hidden');
-}
-
-async function cambiarVotacion(abrir){
-  const clave = document.getElementById('inClaveAdmin').value.trim();
-  const errBox = document.getElementById('errorAdmin');
-  errBox.classList.add('hidden');
-
-  if(!clave){ errBox.textContent = 'Escribe la clave de administrador.'; errBox.classList.remove('hidden'); return; }
-
-  const { data, error } = await db.rpc('cambiar_estado_votacion', { p_clave: clave, p_abrir: abrir });
-
-  if(error || !data || !data.success){
-    errBox.textContent = (data && data.message) ? data.message : 'No se pudo actualizar el estado.';
-    errBox.classList.remove('hidden');
-    return;
-  }
-
-  await verificarEstadoVotacion();
-  document.getElementById('estadoAdminActual').textContent =
-    abrir ? 'Estado actual: la votación está ABIERTA.' : 'Estado actual: la votación está CERRADA.';
 }
 
 function actualizarReloj(){
