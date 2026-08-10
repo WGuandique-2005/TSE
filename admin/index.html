@@ -338,6 +338,31 @@
     </div>
   </div>
 
+  <div id="modalDetallePartido" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
+
+    <div id="modalDetalleContenido" class="relative bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl border border-[var(--gris-linea)]">
+      <button onclick="cerrarModalDetallePartido()" type="button" aria-label="Cerrar modal"
+        class="absolute top-4 right-4 h-9 w-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-lg font-bold transition-colors">
+        ✕
+      </button>
+
+      <div class="h-20 w-full flex items-center justify-center mb-4 mt-2">
+        <img id="detBandera" src="" alt="Bandera del partido" class="h-16 max-w-full object-contain">
+      </div>
+
+      <img id="detFoto" src="" alt="Fotografía del candidato"
+        class="h-36 w-36 rounded-full object-cover border-4 border-[var(--azul-hielo)] shadow-md mx-auto mb-4">
+
+      <h3 id="detNombrePartido" class="font-display text-2xl font-bold text-[var(--azul-marino)] leading-tight mb-1"></h3>
+      <p class="text-xs font-semibold text-[var(--azul-primario)] uppercase tracking-wider mb-1">Candidatura Presidencial</p>
+      <p id="detNombreCandidato" class="text-base text-slate-700 font-medium mb-6"></p>
+
+      <div class="flex justify-center">
+        <button onclick="cerrarModalDetallePartido()" type="button" class="w-full btn-secondary font-semibold py-2.5 rounded-lg border border-[var(--gris-linea)] hover:bg-[var(--azul-hielo)]">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = "https://pctktijloluxfcvjgayb.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_D3O-l3dlJqdXLJtkK0hd2Q_EMDqUcUk";
@@ -352,7 +377,48 @@
 
     async function cargarEstado() { const { data, error } = await db.rpc('verificar_estado_votacion'); if (error) { $('estadoVotacion').textContent = 'No disponible'; return false; } votacionAbierta = Boolean(data); $('estadoVotacion').textContent = votacionAbierta ? 'ABIERTA' : 'CERRADA'; $('estadoVotacion').className = `font-display text-xl font-bold mt-3 ${votacionAbierta ? 'text-green-700' : 'text-red-700'}`; if (votantes.length) { renderVotantes(); actualizarResumen(); } return true; }
 
-    async function cargarPartidos() { const grid = $('gridPartidos'); if (!grid) return; grid.innerHTML = '<p class="text-center text-slate-500 col-span-full py-6">Cargando partidos…</p>'; const { data, error } = await db.from('partidos').select('*').order('orden'); if (error || !data) { grid.innerHTML = '<p class="text-center text-red-700 col-span-full py-6">No se pudieron cargar los partidos.</p>'; return; } if ($('contadorPartidos')) $('contadorPartidos').textContent = `${data.length} partidos inscritos`; grid.innerHTML = ''; data.forEach(p => { const card = document.createElement('div'); card.className = 'border border-[var(--gris-linea)] rounded-xl p-5 bg-white flex flex-col items-center text-center hover:border-[var(--azul-claro)] transition-colors shadow-sm'; card.innerHTML = `<div class="h-16 w-full flex items-center justify-center mb-3"><img src="${p.bandera_url}" alt="Bandera ${p.nombre}" class="h-14 object-contain"></div><img src="${p.candidato_foto_url}" alt="${p.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-[var(--azul-hielo)] mb-3 shadow-sm"><h3 class="font-display font-bold text-base text-[var(--azul-marino)] leading-tight mb-1">${p.nombre}</h3><p class="text-xs font-semibold text-[var(--azul-primario)] uppercase tracking-wider mb-1">Candidato / Candidata</p><p class="text-sm text-slate-600 font-medium">${p.candidato_nombre}</p>`; grid.appendChild(card); }); }
+    async function cargarPartidos() {
+      const grid = $('gridPartidos'); if (!grid) return;
+      grid.innerHTML = '<p class="text-center text-slate-500 col-span-full py-6">Cargando partidos…</p>';
+      const { data, error } = await db.from('partidos').select('*').order('orden');
+      if (error || !data) { grid.innerHTML = '<p class="text-center text-red-700 col-span-full py-6">No se pudieron cargar los partidos.</p>'; return; }
+      if ($('contadorPartidos')) $('contadorPartidos').textContent = `${data.length} partidos inscritos`;
+      grid.innerHTML = '';
+      data.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'border border-[var(--gris-linea)] rounded-xl p-5 bg-white flex flex-col items-center text-center hover:border-[var(--azul-claro)] hover:shadow-md transition-all cursor-pointer relative';
+        card.innerHTML = `<div class="h-16 w-full flex items-center justify-center mb-3"><img src="${p.bandera_url}" alt="Bandera ${p.nombre}" class="h-14 object-contain"></div><img src="${p.candidato_foto_url}" alt="${p.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-[var(--azul-hielo)] mb-3 shadow-sm"><h3 class="font-display font-bold text-base text-[var(--azul-marino)] leading-tight mb-1">${p.nombre}</h3><p class="text-xs font-semibold text-[var(--azul-primario)] uppercase tracking-wider mb-1">Candidato / Candidata</p><p class="text-sm text-slate-600 font-medium mb-2">${p.candidato_nombre}</p><span class="text-xs font-semibold text-[var(--azul-primario)] hover:underline mt-auto pt-1">🔍 Ver información ampliada</span>`;
+        card.addEventListener('click', () => abrirModalDetallePartido(p));
+        grid.appendChild(card);
+      });
+    }
+
+    function abrirModalDetallePartido(p) {
+      $('detBandera').src = p.bandera_url || '';
+      $('detBandera').alt = `Bandera ${p.nombre}`;
+      $('detFoto').src = p.candidato_foto_url || '';
+      $('detFoto').alt = p.candidato_nombre;
+      $('detNombrePartido').textContent = p.nombre;
+      $('detNombreCandidato').textContent = p.candidato_nombre;
+      $('modalDetallePartido').classList.remove('hidden');
+    }
+
+    function cerrarModalDetallePartido() {
+      $('modalDetallePartido').classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const m = $('modalDetallePartido');
+      if (m) {
+        m.addEventListener('click', function (e) {
+          if (e.target === this) cerrarModalDetallePartido();
+        });
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') cerrarModalDetallePartido();
+    });
 
     async function cargarVotantes() { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">Cargando registros…</td></tr>'; const { data, error } = await db.from('estudiantes').select('codigo,nombres,apellidos,ya_voto,fecha_voto').order('apellidos').order('nombres'); if (error) { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-red-700">No se pudo cargar la lista de votantes.</td></tr>'; mostrarMensaje('Supabase está bloqueando la lectura de estudiantes. Verifica el GRANT y la policy SELECT de la tabla.', true); return; } votantes = data || []; renderVotantes(); actualizarResumen(); }
     function renderVotantes() { const q = $('buscar').value.trim().toLowerCase(); const lista = votantes.filter(v => `${nombreVotante(v)} ${v.codigo || ''}`.toLowerCase().includes(q)); $('contadorFiltrado').textContent = `Mostrando ${lista.length} de ${votantes.length} votantes`; $('tablaVotantes').innerHTML = ''; if (!lista.length) { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">No se encontraron votantes.</td></tr>'; return; } lista.forEach(v => { const tr = document.createElement('tr'); tr.className = 'border-t border-[var(--gris-linea)]'; const tdNombre = document.createElement('td'); tdNombre.className = 'px-5 py-3 font-medium'; tdNombre.textContent = nombreVotante(v); const tdCodigo = document.createElement('td'); tdCodigo.className = 'px-5 py-3 text-slate-600'; tdCodigo.textContent = v.codigo || '—'; const tdEstado = document.createElement('td'); tdEstado.className = 'px-5 py-3'; const badge = document.createElement('span'); const votado = yaVoto(v); let badgeText = '', badgeClass = ''; if (votado) { badgeText = '✓ Ya votó'; badgeClass = 'bg-green-100 text-green-800'; } else if (!votacionAbierta) { badgeText = 'Ausente'; badgeClass = 'bg-red-100 text-red-800'; } else { badgeText = 'Pendiente'; badgeClass = 'bg-amber-100 text-amber-800'; } badge.className = `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`; badge.textContent = badgeText; tdEstado.appendChild(badge); const tdFecha = document.createElement('td'); tdFecha.className = 'px-5 py-3 text-slate-600 text-xs whitespace-nowrap'; const fechaVal = v.fecha_voto || v.created_at || v.creado_en; tdFecha.textContent = (votado && fechaVal) ? formatearFecha(fechaVal) : '—'; tr.append(tdNombre, tdCodigo, tdEstado, tdFecha); $('tablaVotantes').appendChild(tr); }); }
@@ -367,4 +433,4 @@
   </script>
 </body>
 
-</html
+</html>
