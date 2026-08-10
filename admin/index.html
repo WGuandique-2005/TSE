@@ -1,184 +1,370 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TSE | Panel administrativo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSE | Panel administrativo</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
-<style>
-  :root{--azul-marino:#0B1F4E;--azul-primario:#1D4ED8;--azul-claro:#3B82F6;--azul-hielo:#EFF4FF;--blanco:#FFF;--gris-linea:#DCE3F0;--verde:#16A34A;--rojo:#DC2626;--color-focus:rgba(29,78,216,.24);--radius-md:12px;--radius-lg:16px}
-  *{box-sizing:border-box} body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:var(--azul-marino)} .font-display{font-family:'Libre Baskerville',Georgia,serif}
-  button,input{min-height:44px} button:focus-visible,input:focus-visible{outline:3px solid var(--color-focus);outline-offset:2px}
-  input:focus{outline:none;border-color:var(--azul-primario);box-shadow:0 0 0 3px var(--color-focus)}
-  .btn-primary{background:var(--azul-primario);color:#fff}.btn-primary:hover{background:var(--azul-marino)}
-  .btn-secondary{border:1.5px solid var(--gris-linea);color:var(--azul-marino)} .btn-secondary:hover{background:var(--azul-hielo);border-color:var(--azul-claro)}
-  .modal-overlay{background:rgba(11,31,78,.55)}
+  <style>
+    :root {
+      --azul-marino: #0B1F4E;
+      --azul-primario: #1D4ED8;
+      --azul-claro: #3B82F6;
+      --azul-hielo: #EFF4FF;
+      --blanco: #FFF;
+      --gris-linea: #DCE3F0;
+      --verde: #16A34A;
+      --rojo: #DC2626;
+      --color-focus: rgba(29, 78, 216, .24);
+      --radius-md: 12px;
+      --radius-lg: 16px
+    }
 
-  /* ===== Barra superior (reloj siempre visible) ===== */
-  .top-bar-inner{
-    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:2px 12px;
-  }
-  #reloj{ font-variant-numeric:tabular-nums; }
+    * {
+      box-sizing: border-box
+    }
 
-  @media(max-width:640px){
-    /* Barra superior */
-    .top-bar-inner{ justify-content:center; text-align:center; }
-    #reloj{ width:100%; text-align:center; font-size:.7rem; opacity:.85; padding-bottom:2px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #fff;
+      color: var(--azul-marino)
+    }
 
-    /* Header */
-    header .header-brand img:first-child{ height:2.25rem; }
-    header .header-brand img:last-child{ height:1.7rem; max-width:8.5rem; }
-    header .header-brand span.h-9{ height:1.75rem; }
-    header .header-right{ flex-wrap:wrap; justify-content:flex-end; }
-    header .header-right .admin-label{ font-size:.75rem; }
+    .font-display {
+      font-family: 'Libre Baskerville', Georgia, serif
+    }
 
-    /* Main content */
-    main{ padding-top:1.25rem; padding-bottom:2rem; }
+    button,
+    input {
+      min-height: 44px
+    }
 
-    /* Summary cards */
-    #resumen{ grid-template-columns:1fr 1fr; gap:.75rem; }
-    #resumen > div{ padding:.875rem; }
-    #resumen .font-display{ font-size:1.5rem; }
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--color-focus);
+      outline-offset: 2px
+    }
 
-    /* Charts */
-    .chart-box{ height:220px; }
+    input:focus {
+      outline: none;
+      border-color: var(--azul-primario);
+      box-shadow: 0 0 0 3px var(--color-focus)
+    }
 
-    /* Table */
-    .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    .voters-table{ min-width:640px; }
-    .voters-table th, .voters-table td{ padding-left:.75rem; padding-right:.75rem; font-size:.8rem; }
+    .btn-primary {
+      background: var(--azul-primario);
+      color: #fff
+    }
 
-    /* Modals */
-    #accesoAdmin > div{ margin:0 .5rem; max-height:calc(100vh - 2rem); overflow-y:auto; }
+    .btn-primary:hover {
+      background: var(--azul-marino)
+    }
 
-    /* Title section */
-    main > div:first-child h1{ font-size:1.5rem; }
-  }
+    .btn-secondary {
+      border: 1.5px solid var(--gris-linea);
+      color: var(--azul-marino)
+    }
 
-  @media(max-width:380px){
-    #resumen{ grid-template-columns:1fr; }
-  }
+    .btn-secondary:hover {
+      background: var(--azul-hielo);
+      border-color: var(--azul-claro)
+    }
 
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-</style>
+    .modal-overlay {
+      background: rgba(11, 31, 78, .55)
+    }
+
+    /* ===== Barra superior (reloj siempre visible) ===== */
+    .top-bar-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2px 12px;
+    }
+
+    #reloj {
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media(max-width:640px) {
+
+      /* Barra superior */
+      .top-bar-inner {
+        justify-content: center;
+        text-align: center;
+      }
+
+      #reloj {
+        width: 100%;
+        text-align: center;
+        font-size: .7rem;
+        opacity: .85;
+        padding-bottom: 2px;
+      }
+
+      /* Header */
+      header .header-brand img:first-child {
+        height: 2.25rem;
+      }
+
+      header .header-brand img:last-child {
+        height: 1.7rem;
+        max-width: 8.5rem;
+      }
+
+      header .header-brand span.h-9 {
+        height: 1.75rem;
+      }
+
+      header .header-right {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      header .header-right .admin-label {
+        font-size: .75rem;
+      }
+
+      /* Main content */
+      main {
+        padding-top: 1.25rem;
+        padding-bottom: 2rem;
+      }
+
+      /* Summary cards */
+      #resumen {
+        grid-template-columns: 1fr 1fr;
+        gap: .75rem;
+      }
+
+      #resumen>div {
+        padding: .875rem;
+      }
+
+      #resumen .font-display {
+        font-size: 1.5rem;
+      }
+
+      /* Charts */
+      .chart-box {
+        height: 220px;
+      }
+
+      /* Table */
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .voters-table {
+        min-width: 640px;
+      }
+
+      .voters-table th,
+      .voters-table td {
+        padding-left: .75rem;
+        padding-right: .75rem;
+        font-size: .8rem;
+      }
+
+      /* Modals */
+      #accesoAdmin>div {
+        margin: 0 .5rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+      }
+
+      /* Title section */
+      main>div:first-child h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    @media(max-width:380px) {
+      #resumen {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important
+      }
+    }
+  </style>
 </head>
+
 <body class="min-h-screen flex flex-col">
-<header class="w-full border-b-4 border-[var(--azul-primario)] sticky top-0 bg-white z-40">
-  <div class="bg-[var(--azul-marino)] text-white text-xs sm:text-sm">
-    <div class="top-bar-inner max-w-6xl mx-auto px-4 py-1.5"><span>Portal Electoral — Universidad Gerardo Barrios</span><span id="reloj"></span></div>
-  </div>
-  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-    <a href="../" class="header-brand flex items-center gap-3" aria-label="Volver al inicio">
-      <img src="../assets/escudo-gobierno.png" alt="Escudo de El Salvador" class="h-11 w-auto"><span class="h-9 w-px bg-[var(--gris-linea)]"></span><img src="../assets/logo-tse.png" alt="Tribunal Supremo Electoral" class="h-8 w-auto">
-    </a>
-    <div class="header-right flex items-center gap-2"><nav class="hidden sm:flex items-center gap-1 mr-2" aria-label="Navegación administrativa"><a href="#resumen" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Resumen</a><a href="#partidos" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Partidos</a><a href="#votantes" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Votantes inscritos</a></nav><span class="admin-label text-sm font-semibold text-[var(--azul-marino)]">Panel administrativo</span></div>
-  </div>
-</header>
-
-<main id="contenidoAdmin" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 py-8">
-  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-    <div><p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-1">Supervisión electoral</p><h1 class="font-display text-2xl sm:text-3xl font-bold">Panel administrativo</h1><p class="text-slate-600 mt-2">Consulta la participación y el avance de la votación.</p></div>
-    <div class="flex flex-wrap gap-2"><button id="btnSalir" class="btn-primary font-semibold px-4 py-2.5 rounded-lg">Salir</button></div>
-  </div>
-
-  <div id="mensaje" class="hidden rounded-lg px-4 py-3 text-sm mb-6" role="status"></div>
-  <section id="resumen" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumen de participación">
-    <div class="border border-[var(--gris-linea)] rounded-xl p-5"><p class="text-sm text-slate-500">Total de votantes</p><p id="totalVotantes" class="font-display text-3xl font-bold mt-2">—</p></div>
-    <div class="border border-green-200 bg-green-50 rounded-xl p-5"><p class="text-sm text-green-800">Han votado</p><p id="totalVotaron" class="font-display text-3xl font-bold text-green-900 mt-2">—</p></div>
-    <div class="border border-amber-200 bg-amber-50 rounded-xl p-5"><p class="text-sm text-amber-800">Faltan por votar</p><p id="totalFaltan" class="font-display text-3xl font-bold text-amber-900 mt-2">—</p></div>
-    <div class="border border-[var(--gris-linea)] rounded-xl p-5"><p class="text-sm text-slate-500">Estado</p><p id="estadoVotacion" class="font-display text-xl font-bold mt-3">Consultando…</p></div>
-  </section>
-
-  <section class="grid lg:grid-cols-2 gap-6 mb-8" aria-label="Gráficos de resultados">
-    <div class="border border-[var(--gris-linea)] rounded-2xl p-5"><h2 class="font-display text-lg font-bold mb-4">Participación</h2><div class="chart-box relative h-64"><canvas id="graficoParticipacion"></canvas></div></div>
-    <div class="border border-[var(--gris-linea)] rounded-2xl p-5"><h2 class="font-display text-lg font-bold mb-4">Resultados por opción</h2><div class="chart-box relative h-64"><canvas id="graficoResultados"></canvas></div></div>
-  </section>
-
-  <section id="partidos" class="border border-[var(--gris-linea)] rounded-2xl p-6 mb-8 scroll-mt-32">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-[var(--gris-linea)] pb-4">
-      <div>
-        <h2 class="font-display text-lg font-bold">Partidos participantes</h2>
-        <p class="text-sm text-slate-500 mt-1">Planillas y candidaturas registradas en el sistema</p>
+  <header class="w-full border-b-4 border-[var(--azul-primario)] sticky top-0 bg-white z-40">
+    <div class="bg-[var(--azul-marino)] text-white text-xs sm:text-sm">
+      <div class="top-bar-inner max-w-6xl mx-auto px-4 py-1.5"><span>Portal Electoral — Universidad Gerardo
+          Barrios</span><span id="reloj"></span></div>
+    </div>
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <a href="../" class="header-brand flex items-center gap-3" aria-label="Volver al inicio">
+        <img src="../assets/escudo-gobierno.png" alt="Escudo de El Salvador" class="h-11 w-auto"><span
+          class="h-9 w-px bg-[var(--gris-linea)]"></span><img src="../assets/logo-tse.png"
+          alt="Tribunal Supremo Electoral" class="h-8 w-auto">
+      </a>
+      <div class="header-right flex items-center gap-2">
+        <nav class="hidden sm:flex items-center gap-1 mr-2" aria-label="Navegación administrativa"><a href="#resumen"
+            class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Resumen</a><a
+            href="#partidos"
+            class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Partidos</a><a
+            href="#votantes" class="px-3 py-2 text-sm font-semibold rounded-md hover:bg-[var(--azul-hielo)]">Votantes
+            inscritos</a></nav><span class="admin-label text-sm font-semibold text-[var(--azul-marino)]">Panel
+          administrativo</span>
       </div>
-      <span id="contadorPartidos" class="text-xs font-semibold px-3 py-1 bg-[var(--azul-hielo)] text-[var(--azul-primario)] rounded-full w-max">Cargando partidos…</span>
     </div>
-    <div id="gridPartidos" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      <p class="text-center text-slate-500 col-span-full py-6">Cargando partidos…</p>
-    </div>
-  </section>
+  </header>
 
-  <section id="votantes" class="border border-[var(--gris-linea)] rounded-2xl overflow-hidden scroll-mt-32">
-    <div class="p-5 border-b border-[var(--gris-linea)] flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h2 class="font-display text-lg font-bold">Votantes inscritos</h2><p id="contadorFiltrado" class="text-sm text-slate-500 mt-1">Cargando registros…</p></div><div class="flex gap-2"><label for="buscar" class="sr-only">Buscar votante</label><input id="buscar" type="search" placeholder="Buscar por nombre o código" class="w-full sm:w-72 border border-[var(--gris-linea)] rounded-lg px-3 py-2.5"><button id="btnActualizar" class="btn-secondary px-3 rounded-lg" title="Actualizar">↻</button></div></div>
-    <div class="table-wrap"><table class="voters-table w-full text-sm"><thead class="bg-[var(--azul-hielo)] text-left"><tr><th class="px-5 py-3 font-semibold">Nombre completo</th><th class="px-5 py-3 font-semibold">Código</th><th class="px-5 py-3 font-semibold">Estado</th><th class="px-5 py-3 font-semibold">Fecha y hora de voto</th></tr></thead><tbody id="tablaVotantes"></tbody></table></div>
-  </section>
-</main>
-
-<footer class="bg-[var(--azul-marino)] text-white text-center text-xs py-4 space-y-1"><p>Universidad Gerardo Barrios — Ingeniería en Sistemas y Redes Informáticas</p><a href="../" class="text-[var(--azul-claro)] hover:text-white underline underline-offset-2">Volver al sistema de votación</a></footer>
-
-<div id="accesoAdmin" class="fixed inset-0 bg-[var(--azul-hielo)] flex items-center justify-center px-4 z-50"><div class="bg-white border border-[var(--gris-linea)] rounded-2xl max-w-sm w-full p-6 shadow-xl"><p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-2">Acceso restringido</p><h2 class="font-display text-xl font-bold mb-2">Panel administrativo</h2><p class="text-sm text-slate-500 mb-5">Ingresa la clave de administración.</p><label for="claveAcceso" class="block text-sm font-semibold mb-1">Clave de administrador</label><input id="claveAcceso" type="password" autocomplete="current-password" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5 mb-3"><p id="errorAcceso" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4"></p><button id="btnAcceder" class="btn-primary w-full font-semibold py-2.5 rounded-lg">Acceder</button><a href="../" class="btn-secondary w-full inline-flex items-center justify-center text-sm font-semibold py-2.5 rounded-lg mt-3">Volver</a></div></div>
-
-<div id="modalDetallePartido" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
-  <div id="modalDetalleContenido" class="relative bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl border border-[var(--gris-linea)]">
-    <button onclick="cerrarModalDetallePartido()" type="button" aria-label="Cerrar modal"
-      class="absolute top-4 right-4 h-9 w-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-lg font-bold transition-colors">
-      ✕
-    </button>
-
-    <div class="h-20 w-full flex items-center justify-center mb-4 mt-2">
-      <img id="detBandera" src="" alt="Bandera del partido" class="h-16 max-w-full object-contain">
+  <main id="contenidoAdmin" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div>
+        <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-1">Supervisión
+          electoral</p>
+        <h1 class="font-display text-2xl sm:text-3xl font-bold">Panel administrativo</h1>
+        <p class="text-slate-600 mt-2">Consulta la participación y el avance de la votación.</p>
+      </div>
+      <div class="flex flex-wrap gap-2"><button id="btnSalir"
+          class="btn-primary font-semibold px-4 py-2.5 rounded-lg">Salir</button></div>
     </div>
 
-    <img id="detFoto" src="" alt="Fotografía del candidato"
-      class="h-36 w-36 rounded-full object-cover border-4 border-[var(--azul-hielo)] shadow-md mx-auto mb-4">
+    <div id="mensaje" class="hidden rounded-lg px-4 py-3 text-sm mb-6" role="status"></div>
+    <section id="resumen" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumen de participación">
+      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+        <p class="text-sm text-slate-500">Total de votantes</p>
+        <p id="totalVotantes" class="font-display text-3xl font-bold mt-2">—</p>
+      </div>
+      <div class="border border-green-200 bg-green-50 rounded-xl p-5">
+        <p class="text-sm text-green-800">Han votado</p>
+        <p id="totalVotaron" class="font-display text-3xl font-bold text-green-900 mt-2">—</p>
+      </div>
+      <div class="border border-amber-200 bg-amber-50 rounded-xl p-5">
+        <p class="text-sm text-amber-800">Faltan por votar</p>
+        <p id="totalFaltan" class="font-display text-3xl font-bold text-amber-900 mt-2">—</p>
+      </div>
+      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+        <p class="text-sm text-slate-500">Estado</p>
+        <p id="estadoVotacion" class="font-display text-xl font-bold mt-3">Consultando…</p>
+      </div>
+    </section>
 
-    <h3 id="detNombrePartido" class="font-display text-2xl font-bold text-[var(--azul-marino)] leading-tight mb-1"></h3>
-    <p class="text-xs font-semibold text-[var(--azul-primario)] uppercase tracking-wider mb-1">Candidatura Presidencial</p>
-    <p id="detNombreCandidato" class="text-base text-slate-700 font-medium mb-6"></p>
+    <section class="grid lg:grid-cols-2 gap-6 mb-8" aria-label="Gráficos de resultados">
+      <div class="border border-[var(--gris-linea)] rounded-2xl p-5">
+        <h2 class="font-display text-lg font-bold mb-4">Participación</h2>
+        <div class="chart-box relative h-64"><canvas id="graficoParticipacion"></canvas></div>
+      </div>
+      <div class="border border-[var(--gris-linea)] rounded-2xl p-5">
+        <h2 class="font-display text-lg font-bold mb-4">Resultados por opción</h2>
+        <div class="chart-box relative h-64"><canvas id="graficoResultados"></canvas></div>
+      </div>
+    </section>
 
-    <div class="flex justify-center">
-      <button onclick="cerrarModalDetallePartido()" type="button" class="w-full btn-secondary font-semibold py-2.5 rounded-lg border border-[var(--gris-linea)] hover:bg-[var(--azul-hielo)]">Cerrar</button>
+    <section id="partidos" class="border border-[var(--gris-linea)] rounded-2xl p-6 mb-8 scroll-mt-32">
+      <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-[var(--gris-linea)] pb-4">
+        <div>
+          <h2 class="font-display text-lg font-bold">Partidos participantes</h2>
+          <p class="text-sm text-slate-500 mt-1">Planillas y candidaturas registradas en el sistema</p>
+        </div>
+        <span id="contadorPartidos"
+          class="text-xs font-semibold px-3 py-1 bg-[var(--azul-hielo)] text-[var(--azul-primario)] rounded-full w-max">Cargando
+          partidos…</span>
+      </div>
+      <div id="gridPartidos" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <p class="text-center text-slate-500 col-span-full py-6">Cargando partidos…</p>
+      </div>
+    </section>
+
+    <section id="votantes" class="border border-[var(--gris-linea)] rounded-2xl overflow-hidden scroll-mt-32">
+      <div
+        class="p-5 border-b border-[var(--gris-linea)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="font-display text-lg font-bold">Votantes inscritos</h2>
+          <p id="contadorFiltrado" class="text-sm text-slate-500 mt-1">Cargando registros…</p>
+        </div>
+        <div class="flex gap-2"><label for="buscar" class="sr-only">Buscar votante</label><input id="buscar"
+            type="search" placeholder="Buscar por nombre o código"
+            class="w-full sm:w-72 border border-[var(--gris-linea)] rounded-lg px-3 py-2.5"><button id="btnActualizar"
+            class="btn-secondary px-3 rounded-lg" title="Actualizar">↻</button></div>
+      </div>
+      <div class="table-wrap">
+        <table class="voters-table w-full text-sm">
+          <thead class="bg-[var(--azul-hielo)] text-left">
+            <tr>
+              <th class="px-5 py-3 font-semibold">Nombre completo</th>
+              <th class="px-5 py-3 font-semibold">Código</th>
+              <th class="px-5 py-3 font-semibold">Estado</th>
+              <th class="px-5 py-3 font-semibold">Fecha y hora de voto</th>
+            </tr>
+          </thead>
+          <tbody id="tablaVotantes"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-[var(--azul-marino)] text-white text-center text-xs py-4 space-y-1">
+    <p>Universidad Gerardo Barrios — Ingeniería en Sistemas y Redes Informáticas</p><a href="../"
+      class="text-[var(--azul-claro)] hover:text-white underline underline-offset-2">Volver al sistema de votación</a>
+  </footer>
+
+  <div id="accesoAdmin" class="fixed inset-0 bg-[var(--azul-hielo)] flex items-center justify-center px-4 z-50">
+    <div class="bg-white border border-[var(--gris-linea)] rounded-2xl max-w-sm w-full p-6 shadow-xl">
+      <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-2">Acceso restringido</p>
+      <h2 class="font-display text-xl font-bold mb-2">Panel administrativo</h2>
+      <p class="text-sm text-slate-500 mb-5">Ingresa la clave de administración.</p><label for="claveAcceso"
+        class="block text-sm font-semibold mb-1">Clave de administrador</label><input id="claveAcceso" type="password"
+        autocomplete="current-password" class="w-full border border-[var(--gris-linea)] rounded-lg px-3 py-2.5 mb-3">
+      <p id="errorAcceso" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+      </p><button id="btnAcceder" class="btn-primary w-full font-semibold py-2.5 rounded-lg">Acceder</button><a
+        href="../"
+        class="btn-secondary w-full inline-flex items-center justify-center text-sm font-semibold py-2.5 rounded-lg mt-3">Volver</a>
     </div>
   </div>
-</div>
 
-<script>
-const SUPABASE_URL = "https://pctktijloluxfcvjgayb.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_D3O-l3dlJqdXLJtkK0hd2Q_EMDqUcUk";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let votantes = [], chartParticipacion = null, chartResultados = null, votacionAbierta = true, claveAdminSesion = '';
+  <script>
+    const SUPABASE_URL = "https://pctktijloluxfcvjgayb.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_D3O-l3dlJqdXLJtkK0hd2Q_EMDqUcUk";
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let votantes = [], chartParticipacion = null, chartResultados = null, votacionAbierta = true, claveAdminSesion = '';
 
-const $ = id => document.getElementById(id);
-function mostrarMensaje(texto, error=false){ $('mensaje').textContent=texto; $('mensaje').className=`rounded-lg px-4 py-3 text-sm mb-6 ${error?'bg-red-50 border border-red-200 text-red-700':'bg-green-50 border border-green-200 text-green-800'}`; }
-function nombreVotante(v){ return [v.nombres,v.apellidos].filter(Boolean).join(' ') || v.nombre || 'Sin nombre'; }
-function yaVoto(v){ return Boolean(v.ya_voto ?? v.voto ?? v.votado ?? v.ha_votado); }
-function formatearFecha(fechaStr){ if(!fechaStr) return '—'; const f=new Date(fechaStr); return isNaN(f.getTime()) ? '—' : f.toLocaleString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); }
+    const $ = id => document.getElementById(id);
+    function mostrarMensaje(texto, error = false) { $('mensaje').textContent = texto; $('mensaje').className = `rounded-lg px-4 py-3 text-sm mb-6 ${error ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-800'}`; }
+    function nombreVotante(v) { return [v.nombres, v.apellidos].filter(Boolean).join(' ') || v.nombre || 'Sin nombre'; }
+    function yaVoto(v) { return Boolean(v.ya_voto ?? v.voto ?? v.votado ?? v.ha_votado); }
+    function formatearFecha(fechaStr) { if (!fechaStr) return '—'; const f = new Date(fechaStr); return isNaN(f.getTime()) ? '—' : f.toLocaleString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); }
 
-async function cargarEstado(){ const {data,error}=await db.rpc('verificar_estado_votacion'); if(error){$('estadoVotacion').textContent='No disponible';return false;} votacionAbierta=Boolean(data); $('estadoVotacion').textContent=votacionAbierta?'ABIERTA':'CERRADA'; $('estadoVotacion').className=`font-display text-xl font-bold mt-3 ${votacionAbierta?'text-green-700':'text-red-700'}`; if(votantes.length){ renderVotantes(); actualizarResumen(); } return true; }
+    async function cargarEstado() { const { data, error } = await db.rpc('verificar_estado_votacion'); if (error) { $('estadoVotacion').textContent = 'No disponible'; return false; } votacionAbierta = Boolean(data); $('estadoVotacion').textContent = votacionAbierta ? 'ABIERTA' : 'CERRADA'; $('estadoVotacion').className = `font-display text-xl font-bold mt-3 ${votacionAbierta ? 'text-green-700' : 'text-red-700'}`; if (votantes.length) { renderVotantes(); actualizarResumen(); } return true; }
 
-async function cargarPartidos(){ const grid=$('gridPartidos'); if(!grid) return; grid.innerHTML='<p class="text-center text-slate-500 col-span-full py-6">Cargando partidos…</p>'; const {data,error}=await db.from('partidos').select('*').order('orden'); if(error||!data){ grid.innerHTML='<p class="text-center text-red-700 col-span-full py-6">No se pudieron cargar los partidos.</p>'; return; } if($('contadorPartidos')) $('contadorPartidos').textContent=`${data.length} partidos inscritos`; grid.innerHTML=''; data.forEach(p=>{ const card=document.createElement('div'); card.className='border border-[var(--gris-linea)] rounded-xl p-5 bg-white flex flex-col items-center text-center hover:border-[var(--azul-claro)] hover:shadow-md transition-all cursor-pointer relative'; card.innerHTML=`<div class="h-16 w-full flex items-center justify-center mb-3"><img src="${p.bandera_url}" alt="Bandera ${p.nombre}" class="h-14 object-contain"></div><img src="${p.candidato_foto_url}" alt="${p.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-[var(--azul-hielo)] mb-3 shadow-sm"><h3 class="font-display font-bold text-base text-[var(--azul-marino)] leading-tight mb-1">${p.nombre}</h3><p class="text-xs font-semibold text-[var(--azul-primario)] uppercase tracking-wider mb-1">Candidato / Candidata</p><p class="text-sm text-slate-600 font-medium mb-2">${p.candidato_nombre}</p><span class="text-xs font-semibold text-[var(--azul-primario)] hover:underline mt-auto pt-1">🔍 Ver información ampliada</span>`; card.addEventListener('click', () => abrirModalDetallePartido(p)); grid.appendChild(card); }); }
+    async function cargarPartidos() { const grid = $('gridPartidos'); if (!grid) return; grid.innerHTML = '<p class="text-center text-slate-500 col-span-full py-6">Cargando partidos…</p>'; const { data, error } = await db.from('partidos').select('*').order('orden'); if (error || !data) { grid.innerHTML = '<p class="text-center text-red-700 col-span-full py-6">No se pudieron cargar los partidos.</p>'; return; } if ($('contadorPartidos')) $('contadorPartidos').textContent = `${data.length} partidos inscritos`; grid.innerHTML = ''; data.forEach(p => { const card = document.createElement('div'); card.className = 'border border-[var(--gris-linea)] rounded-xl p-5 bg-white flex flex-col items-center text-center hover:border-[var(--azul-claro)] transition-colors shadow-sm'; card.innerHTML = `<div class="h-16 w-full flex items-center justify-center mb-3"><img src="${p.bandera_url}" alt="Bandera ${p.nombre}" class="h-14 object-contain"></div><img src="${p.candidato_foto_url}" alt="${p.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-[var(--azul-hielo)] mb-3 shadow-sm"><h3 class="font-display font-bold text-base text-[var(--azul-marino)] leading-tight mb-1">${p.nombre}</h3><p class="text-xs font-semibold text-[var(--azul-primario)] uppercase tracking-wider mb-1">Candidato / Candidata</p><p class="text-sm text-slate-600 font-medium">${p.candidato_nombre}</p>`; grid.appendChild(card); }); }
 
-function abrirModalDetallePartido(p){ $('detBandera').src=p.bandera_url||''; $('detBandera').alt=`Bandera ${p.nombre}`; $('detFoto').src=p.candidato_foto_url||''; $('detFoto').alt=p.candidato_nombre; $('detNombrePartido').textContent=p.nombre; $('detNombreCandidato').textContent=p.candidato_nombre; $('modalDetallePartido').classList.remove('hidden'); }
-function cerrarModalDetallePartido(){ $('modalDetallePartido').classList.add('hidden'); }
-document.addEventListener('DOMContentLoaded', () => { const m=$('modalDetallePartido'); if(m){ m.addEventListener('click', function(e){ if(e.target===this) cerrarModalDetallePartido(); }); } });
-document.addEventListener('keydown', e => { if(e.key==='Escape') cerrarModalDetallePartido(); });
+    async function cargarVotantes() { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">Cargando registros…</td></tr>'; const { data, error } = await db.from('estudiantes').select('codigo,nombres,apellidos,ya_voto,fecha_voto').order('apellidos').order('nombres'); if (error) { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-red-700">No se pudo cargar la lista de votantes.</td></tr>'; mostrarMensaje('Supabase está bloqueando la lectura de estudiantes. Verifica el GRANT y la policy SELECT de la tabla.', true); return; } votantes = data || []; renderVotantes(); actualizarResumen(); }
+    function renderVotantes() { const q = $('buscar').value.trim().toLowerCase(); const lista = votantes.filter(v => `${nombreVotante(v)} ${v.codigo || ''}`.toLowerCase().includes(q)); $('contadorFiltrado').textContent = `Mostrando ${lista.length} de ${votantes.length} votantes`; $('tablaVotantes').innerHTML = ''; if (!lista.length) { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">No se encontraron votantes.</td></tr>'; return; } lista.forEach(v => { const tr = document.createElement('tr'); tr.className = 'border-t border-[var(--gris-linea)]'; const tdNombre = document.createElement('td'); tdNombre.className = 'px-5 py-3 font-medium'; tdNombre.textContent = nombreVotante(v); const tdCodigo = document.createElement('td'); tdCodigo.className = 'px-5 py-3 text-slate-600'; tdCodigo.textContent = v.codigo || '—'; const tdEstado = document.createElement('td'); tdEstado.className = 'px-5 py-3'; const badge = document.createElement('span'); const votado = yaVoto(v); let badgeText = '', badgeClass = ''; if (votado) { badgeText = '✓ Ya votó'; badgeClass = 'bg-green-100 text-green-800'; } else if (!votacionAbierta) { badgeText = 'Ausente'; badgeClass = 'bg-red-100 text-red-800'; } else { badgeText = 'Pendiente'; badgeClass = 'bg-amber-100 text-amber-800'; } badge.className = `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`; badge.textContent = badgeText; tdEstado.appendChild(badge); const tdFecha = document.createElement('td'); tdFecha.className = 'px-5 py-3 text-slate-600 text-xs whitespace-nowrap'; const fechaVal = v.fecha_voto || v.created_at || v.creado_en; tdFecha.textContent = (votado && fechaVal) ? formatearFecha(fechaVal) : '—'; tr.append(tdNombre, tdCodigo, tdEstado, tdFecha); $('tablaVotantes').appendChild(tr); }); }
+    function actualizarResumen() { const votaron = votantes.filter(yaVoto).length, faltan = votantes.length - votaron; $('totalVotantes').textContent = votantes.length; $('totalVotaron').textContent = votaron; $('totalFaltan').textContent = faltan; const cardFaltan = $('totalFaltan').parentElement; if (!votacionAbierta && faltan > 0) { cardFaltan.firstElementChild.textContent = 'Ausentes'; cardFaltan.className = 'border border-red-200 bg-red-50 rounded-xl p-5'; $('totalFaltan').className = 'font-display text-3xl font-bold text-red-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-red-800'; } else { cardFaltan.firstElementChild.textContent = votacionAbierta ? 'Pendientes' : 'Sin ausencias'; cardFaltan.className = 'border border-amber-200 bg-amber-50 rounded-xl p-5'; $('totalFaltan').className = 'font-display text-3xl font-bold text-amber-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-amber-800'; } if (chartParticipacion) chartParticipacion.destroy(); const labels = votacionAbierta ? ['Han votado', 'Pendientes'] : ['Han votado', 'Ausentes']; const colors = votacionAbierta ? ['#16A34A', '#F59E0B'] : ['#16A34A', '#DC2626']; chartParticipacion = new Chart($('graficoParticipacion'), { type: 'doughnut', data: { labels: labels, datasets: [{ data: [votaron, faltan], backgroundColor: colors, borderColor: '#fff', borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
+    async function cargarResultados() { const { data, error } = await db.from('resultados').select('*'); if (error || !data) { mostrarMensaje('No se pudieron cargar los resultados.', true); return; } if (chartResultados) chartResultados.destroy(); chartResultados = new Chart($('graficoResultados'), { type: 'bar', data: { labels: data.map(p => p.nombre), datasets: [{ label: 'Votos', data: data.map(p => p.votos), backgroundColor: '#1D4ED8', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } }); }
 
-
-async function cargarVotantes(){ $('tablaVotantes').innerHTML='<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">Cargando registros…</td></tr>'; const {data,error}=await db.from('estudiantes').select('codigo,nombres,apellidos,ya_voto,fecha_voto').order('apellidos').order('nombres'); if(error){ $('tablaVotantes').innerHTML='<tr><td colspan="4" class="px-5 py-6 text-center text-red-700">No se pudo cargar la lista de votantes.</td></tr>'; mostrarMensaje('Supabase está bloqueando la lectura de estudiantes. Verifica el GRANT y la policy SELECT de la tabla.',true); return; } votantes=data||[]; renderVotantes(); actualizarResumen(); }
-function renderVotantes(){ const q=$('buscar').value.trim().toLowerCase(); const lista=votantes.filter(v=>`${nombreVotante(v)} ${v.codigo||''}`.toLowerCase().includes(q)); $('contadorFiltrado').textContent=`Mostrando ${lista.length} de ${votantes.length} votantes`; $('tablaVotantes').innerHTML=''; if(!lista.length){$('tablaVotantes').innerHTML='<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">No se encontraron votantes.</td></tr>';return;} lista.forEach(v=>{const tr=document.createElement('tr');tr.className='border-t border-[var(--gris-linea)]';const tdNombre=document.createElement('td');tdNombre.className='px-5 py-3 font-medium';tdNombre.textContent=nombreVotante(v);const tdCodigo=document.createElement('td');tdCodigo.className='px-5 py-3 text-slate-600';tdCodigo.textContent=v.codigo||'—';const tdEstado=document.createElement('td');tdEstado.className='px-5 py-3';const badge=document.createElement('span');const votado=yaVoto(v);let badgeText='', badgeClass=''; if(votado){ badgeText='✓ Ya votó'; badgeClass='bg-green-100 text-green-800'; }else if(!votacionAbierta){ badgeText='Ausente'; badgeClass='bg-red-100 text-red-800'; }else{ badgeText='Pendiente'; badgeClass='bg-amber-100 text-amber-800'; } badge.className=`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`;badge.textContent=badgeText;tdEstado.appendChild(badge);const tdFecha=document.createElement('td');tdFecha.className='px-5 py-3 text-slate-600 text-xs whitespace-nowrap';const fechaVal=v.fecha_voto||v.created_at||v.creado_en;tdFecha.textContent=(votado&&fechaVal)?formatearFecha(fechaVal):'—';tr.append(tdNombre,tdCodigo,tdEstado,tdFecha);$('tablaVotantes').appendChild(tr);}); }
-function actualizarResumen(){const votaron=votantes.filter(yaVoto).length, faltan=votantes.length-votaron; $('totalVotantes').textContent=votantes.length; $('totalVotaron').textContent=votaron; $('totalFaltan').textContent=faltan; const cardFaltan=$('totalFaltan').parentElement; if(!votacionAbierta && faltan>0){ cardFaltan.firstElementChild.textContent='Ausentes'; cardFaltan.className='border border-red-200 bg-red-50 rounded-xl p-5'; $('totalFaltan').className='font-display text-3xl font-bold text-red-900 mt-2'; cardFaltan.firstElementChild.className='text-sm text-red-800'; }else{ cardFaltan.firstElementChild.textContent=votacionAbierta?'Pendientes':'Sin ausencias'; cardFaltan.className='border border-amber-200 bg-amber-50 rounded-xl p-5'; $('totalFaltan').className='font-display text-3xl font-bold text-amber-900 mt-2'; cardFaltan.firstElementChild.className='text-sm text-amber-800'; } if(chartParticipacion)chartParticipacion.destroy(); const labels=votacionAbierta?['Han votado','Pendientes']:['Han votado','Ausentes']; const colors=votacionAbierta?['#16A34A','#F59E0B']:['#16A34A','#DC2626']; chartParticipacion=new Chart($('graficoParticipacion'),{type:'doughnut',data:{labels:labels,datasets:[{data:[votaron,faltan],backgroundColor:colors,borderColor:'#fff',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}}); }
-async function cargarResultados(){const {data,error}=await db.from('resultados').select('*');if(error||!data){mostrarMensaje('No se pudieron cargar los resultados.',true);return;}if(chartResultados)chartResultados.destroy();chartResultados=new Chart($('graficoResultados'),{type:'bar',data:{labels:data.map(p=>p.nombre),datasets:[{label:'Votos',data:data.map(p=>p.votos),backgroundColor:'#1D4ED8',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});}
-
-function cerrarSesion(){ claveAdminSesion=''; $('contenidoAdmin').classList.add('hidden'); $('accesoAdmin').classList.remove('hidden'); $('claveAcceso').value=''; $('buscar').value=''; votantes=[]; $('tablaVotantes').innerHTML=''; }
-$('buscar').addEventListener('input',renderVotantes);$('btnActualizar').addEventListener('click',()=>{cargarVotantes();cargarResultados();cargarEstado();cargarPartidos();});$('btnSalir').addEventListener('click',cerrarSesion);
-async function acceder(){const clave=$('claveAcceso').value.trim(),err=$('errorAcceso'),btn=$('btnAcceder');err.classList.add('hidden');if(!clave){err.textContent='Escribe la clave de administrador.';err.classList.remove('hidden');return;}btn.disabled=true;btn.textContent='Verificando…';const estadoOk=await cargarEstado();if(!estadoOk){btn.disabled=false;btn.textContent='Acceder';err.textContent='No se pudo consultar el estado de la votación.';err.classList.remove('hidden');return;}const {data,error}=await db.rpc('cambiar_estado_votacion',{p_clave:clave,p_abrir:votacionAbierta});btn.disabled=false;btn.textContent='Acceder';if(error||!data||!data.success){err.textContent=(data&&data.message)||'La clave no es válida o no se pudo verificar.';err.classList.remove('hidden');return;}claveAdminSesion=clave;$('accesoAdmin').classList.add('hidden');$('contenidoAdmin').classList.remove('hidden');cargarVotantes();cargarResultados();cargarPartidos();}
-$('btnAcceder').addEventListener('click',acceder);$('claveAcceso').addEventListener('keydown',e=>{if(e.key==='Enter')acceder();});
-function actualizarReloj(){$('reloj').textContent=new Date().toLocaleString('es-SV',{dateStyle:'full',timeStyle:'short'});} actualizarReloj();setInterval(actualizarReloj,30000);cargarEstado();
-</script>
+    function cerrarSesion() { claveAdminSesion = ''; $('contenidoAdmin').classList.add('hidden'); $('accesoAdmin').classList.remove('hidden'); $('claveAcceso').value = ''; $('buscar').value = ''; votantes = []; $('tablaVotantes').innerHTML = ''; }
+    $('buscar').addEventListener('input', renderVotantes); $('btnActualizar').addEventListener('click', () => { cargarVotantes(); cargarResultados(); cargarEstado(); cargarPartidos(); }); $('btnSalir').addEventListener('click', cerrarSesion);
+    async function acceder() { const clave = $('claveAcceso').value.trim(), err = $('errorAcceso'), btn = $('btnAcceder'); err.classList.add('hidden'); if (!clave) { err.textContent = 'Escribe la clave de administrador.'; err.classList.remove('hidden'); return; } btn.disabled = true; btn.textContent = 'Verificando…'; const estadoOk = await cargarEstado(); if (!estadoOk) { btn.disabled = false; btn.textContent = 'Acceder'; err.textContent = 'No se pudo consultar el estado de la votación.'; err.classList.remove('hidden'); return; } const { data, error } = await db.rpc('cambiar_estado_votacion', { p_clave: clave, p_abrir: votacionAbierta }); btn.disabled = false; btn.textContent = 'Acceder'; if (error || !data || !data.success) { err.textContent = (data && data.message) || 'La clave no es válida o no se pudo verificar.'; err.classList.remove('hidden'); return; } claveAdminSesion = clave; $('accesoAdmin').classList.add('hidden'); $('contenidoAdmin').classList.remove('hidden'); cargarVotantes(); cargarResultados(); cargarPartidos(); }
+    $('btnAcceder').addEventListener('click', acceder); $('claveAcceso').addEventListener('keydown', e => { if (e.key === 'Enter') acceder(); });
+    function actualizarReloj() { $('reloj').textContent = new Date().toLocaleString('es-SV', { dateStyle: 'full', timeStyle: 'short' }); } actualizarReloj(); setInterval(actualizarReloj, 30000); cargarEstado();
+  </script>
 </body>
-</html>
+
+</html
