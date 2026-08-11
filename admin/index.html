@@ -264,6 +264,10 @@
       </div>
     </section>
 
+    <!-- ======================= SECCIÓN GANADOR ======================= -->
+    <div id="tarjetaGanadorAdmin" class="hidden mb-8 border-2 border-[var(--azul-primario)] rounded-2xl p-6 bg-gradient-to-br from-[var(--azul-hielo)] via-white to-amber-50 shadow-md text-center">
+    </div>
+
     <section class="grid lg:grid-cols-2 gap-6 mb-8" aria-label="Gráficos de resultados">
       <div class="border border-[var(--gris-linea)] rounded-2xl p-5">
         <h2 class="font-display text-lg font-bold mb-4">Participación</h2>
@@ -538,7 +542,71 @@
         }
       });
     }
-    async function cargarResultados() { const { data, error } = await db.from('resultados').select('*'); if (error || !data) { mostrarMensaje('No se pudieron cargar los resultados.', true); return; } if (chartResultados) chartResultados.destroy(); chartResultados = new Chart($('graficoResultados'), { type: 'bar', data: { labels: data.map(p => p.nombre), datasets: [{ label: 'Votos', data: data.map(p => p.votos), backgroundColor: '#1D4ED8', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } }); }
+    async function cargarResultados() {
+      const cardGanador = $('tarjetaGanadorAdmin');
+      const { data, error } = await db.from('resultados').select('*').order('votos', { ascending: false });
+      
+      if (error || !data) {
+        mostrarMensaje('No se pudieron cargar los resultados.', true);
+        return;
+      }
+
+      if (chartResultados) chartResultados.destroy();
+      chartResultados = new Chart($('graficoResultados'), {
+        type: 'bar',
+        data: {
+          labels: data.map(p => p.nombre),
+          datasets: [{ label: 'Votos', data: data.map(p => p.votos), backgroundColor: '#1D4ED8', borderRadius: 6 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+
+      const totalVotosEmitidos = data.reduce((acc, p) => acc + (p.votos || 0), 0);
+      
+      if (!cardGanador) return;
+
+      if (!votacionAbierta && totalVotosEmitidos > 0) {
+        const ganador = data[0];
+        cardGanador.classList.remove('hidden');
+        cardGanador.innerHTML = `
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-widest mb-4">
+            🏆 Ganador Electo
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <div class="flex items-center gap-4">
+              <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-16 object-contain">
+              <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-amber-300 shadow-md">
+            </div>
+            <div class="text-center sm:text-left">
+              <h3 class="font-display text-2xl font-bold text-[var(--azul-marino)] mb-1">${ganador.nombre}</h3>
+              <p class="text-base text-slate-700 font-semibold mb-2">${ganador.candidato_nombre}</p>
+              <p class="text-sm font-semibold text-[var(--azul-primario)] bg-blue-50 border border-blue-200 inline-block px-3 py-1 rounded-lg">
+                🗳️ ${ganador.votos} votos (${ganador.porcentaje}%)
+              </p>
+            </div>
+          </div>
+        `;
+      } else if (votacionAbierta) {
+        cardGanador.classList.remove('hidden');
+        cardGanador.innerHTML = `
+          <div class="flex items-center justify-center gap-3 text-blue-900 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm">
+            <span>🔒 La votación está <strong>en curso</strong>. El candidato ganador se proclamará oficialmente al cerrar la elección.</span>
+          </div>
+        `;
+      } else {
+        cardGanador.classList.remove('hidden');
+        cardGanador.innerHTML = `
+          <div class="flex items-center justify-center gap-3 text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+            <span>La votación finalizó sin registrar ningún voto emitido.</span>
+          </div>
+        `;
+      }
+    }
 
     function cerrarSesion() { claveAdminSesion = ''; $('contenidoAdmin').classList.add('hidden'); $('accesoAdmin').classList.remove('hidden'); $('claveAcceso').value = ''; $('buscar').value = ''; if ($('filtroEstado')) $('filtroEstado').value = 'todos'; votantes = []; $('tablaVotantes').innerHTML = ''; }
     $('buscar').addEventListener('input', renderVotantes); if ($('filtroEstado')) $('filtroEstado').addEventListener('change', renderVotantes); $('btnActualizar').addEventListener('click', () => { cargarVotantes(); cargarResultados(); cargarEstado(); cargarPartidos(); }); $('btnSalir').addEventListener('click', cerrarSesion);
