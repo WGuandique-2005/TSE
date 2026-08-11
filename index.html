@@ -520,7 +520,7 @@
           </button>
           <p id="avisoVotacionCerrada"
             class="hidden mt-4 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2 inline-block">
-            La votación ha finalizado. Puedes consultar los resultados.</p>
+            </p>
         </div>
       </div>
 
@@ -633,7 +633,7 @@
       <!-- Se muestra si la votación YA CERRÓ pero nadie votó -->
       <div id="sinVotos"
         class="hidden max-w-md mx-auto text-center text-slate-500 border border-dashed border-[var(--gris-linea)] rounded-2xl p-10 mb-8">
-        La votación no ha comenzado o finalizó sin que se registrara ningún voto todavía.
+        La votación aún no ha comenzado. No se han registrado votos.
       </div>
 
       <div id="tarjetaGanador"
@@ -1057,7 +1057,18 @@
       if (error) return;
       votacionAbierta = data;
       document.getElementById('btnIngresarVotar').classList.toggle('hidden', !votacionAbierta);
-      document.getElementById('avisoVotacionCerrada').classList.toggle('hidden', votacionAbierta);
+      const avisoEl = document.getElementById('avisoVotacionCerrada');
+      avisoEl.classList.toggle('hidden', votacionAbierta);
+      if (!votacionAbierta) {
+        // Consultar si hay votos registrados para mostrar el mensaje adecuado
+        const { data: resultados } = await db.from('resultados').select('votos');
+        const totalVotos = (resultados || []).reduce((acc, p) => acc + (p.votos || 0), 0);
+        if (totalVotos > 0) {
+          avisoEl.textContent = 'La votación ha finalizado. Puedes consultar los resultados.';
+        } else {
+          avisoEl.textContent = 'La votación aún no ha comenzado. No se han registrado votos.';
+        }
+      }
     }
 
     function intentarIngresarVotar() {

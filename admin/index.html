@@ -628,11 +628,19 @@
         }
       } else {
         cardGanador.classList.remove('hidden');
-        cardGanador.innerHTML = `
-          <div class="flex items-center justify-center gap-3 text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
-            <span>Aún no hay ningún voto registrado en el sistema.</span>
-          </div>
-        `;
+        if (votacionAbierta) {
+          cardGanador.innerHTML = `
+            <div class="flex items-center justify-center gap-3 text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+              <span>La votación está en curso. Aún no se han registrado votos.</span>
+            </div>
+          `;
+        } else {
+          cardGanador.innerHTML = `
+            <div class="flex items-center justify-center gap-3 text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+              <span>La votación aún no ha comenzado. No se han registrado votos.</span>
+            </div>
+          `;
+        }
       }
     }
 
