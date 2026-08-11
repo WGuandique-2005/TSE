@@ -571,26 +571,52 @@
       if (!cardGanador) return;
 
       if (!votacionAbierta && totalVotosEmitidos > 0) {
-        const ganador = data[0];
+        const maxVotos = data[0].votos;
+        const ganadores = data.filter(p => p.votos === maxVotos);
+
         cardGanador.classList.remove('hidden');
-        cardGanador.innerHTML = `
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-widest mb-4">
-            🏆 Ganador Electo
-          </div>
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <div class="flex items-center gap-4">
-              <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-16 object-contain">
-              <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-amber-300 shadow-md">
+        if (ganadores.length > 1) {
+          cardGanador.innerHTML = `
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-widest mb-4">
+              ⚖️ Empate Electoral (${ganadores.length} Candidaturas)
             </div>
-            <div class="text-center sm:text-left">
-              <h3 class="font-display text-2xl font-bold text-[var(--azul-marino)] mb-1">${ganador.nombre}</h3>
-              <p class="text-base text-slate-700 font-semibold mb-2">${ganador.candidato_nombre}</p>
-              <p class="text-sm font-semibold text-[var(--azul-primario)] bg-blue-50 border border-blue-200 inline-block px-3 py-1 rounded-lg">
-                🗳️ ${ganador.votos} votos (${ganador.porcentaje}%)
-              </p>
+            <p class="text-sm text-slate-600 mb-4">Se ha producido un empate en el primer lugar con <strong>${maxVotos} votos</strong> cada uno:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-${Math.min(ganadores.length, 3)} gap-4 justify-center items-stretch">
+              ${ganadores.map(g => `
+                <div class="border border-[var(--gris-linea)] rounded-xl p-4 bg-white shadow-sm flex flex-col items-center text-center">
+                  <img src="${g.bandera_url}" alt="Bandera ${g.nombre}" class="h-12 object-contain mb-2">
+                  <img src="${g.candidato_foto_url}" alt="${g.candidato_nombre}" class="h-20 w-20 rounded-full object-cover border-2 border-amber-400 mb-2 shadow">
+                  <h4 class="font-display font-bold text-base text-[var(--azul-marino)]">${g.nombre}</h4>
+                  <p class="text-xs text-slate-600 font-medium mb-2">${g.candidato_nombre}</p>
+                  <span class="text-xs font-semibold text-[var(--azul-primario)] bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md mt-auto">
+                    🗳️ ${g.votos} votos (${g.porcentaje}%)
+                  </span>
+                </div>
+              `).join('')}
             </div>
-          </div>
-        `;
+            <p class="text-xs text-slate-500 mt-4 italic">El Tribunal Supremo Electoral deberá aplicar el protocolo reglamentario para resolución de empates o convocar a segunda vuelta.</p>
+          `;
+        } else {
+          const ganador = ganadores[0];
+          cardGanador.innerHTML = `
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-widest mb-4">
+              🏆 Ganador Electo
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <div class="flex items-center gap-4">
+                <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-16 object-contain">
+                <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-amber-300 shadow-md">
+              </div>
+              <div class="text-center sm:text-left">
+                <h3 class="font-display text-2xl font-bold text-[var(--azul-marino)] mb-1">${ganador.nombre}</h3>
+                <p class="text-base text-slate-700 font-semibold mb-2">${ganador.candidato_nombre}</p>
+                <p class="text-sm font-semibold text-[var(--azul-primario)] bg-blue-50 border border-blue-200 inline-block px-3 py-1 rounded-lg">
+                  🗳️ ${ganador.votos} votos (${ganador.porcentaje}%)
+                </p>
+              </div>
+            </div>
+          `;
+        }
       } else if (votacionAbierta) {
         cardGanador.classList.remove('hidden');
         cardGanador.innerHTML = `

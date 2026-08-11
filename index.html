@@ -980,15 +980,39 @@
       totalBox.textContent = `Total de votos emitidos: ${totalVotos}`;
       bloque.classList.remove('hidden');
 
-      const ganador = data[0];
+      const maxVotos = data[0].votos;
+      const ganadores = data.filter(p => p.votos === maxVotos);
       ganadorBox.classList.remove('hidden');
-      ganadorBox.innerHTML = `
-    <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
-    <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-14 object-contain mx-auto mb-3">
-    <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
-    <p class="font-display text-xl font-bold">${ganador.nombre}</p>
-    <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
-  `;
+
+      if (ganadores.length > 1) {
+        ganadorBox.innerHTML = `
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-widest mb-3">
+            ⚖️ Empate Electoral (${ganadores.length} Candidaturas)
+          </div>
+          <p class="text-sm text-slate-600 mb-4">Se ha registrado un empate en el primer lugar con <strong>${maxVotos} votos</strong> cada uno:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-${Math.min(ganadores.length, 3)} gap-4 justify-center items-center">
+            ${ganadores.map(g => `
+              <div class="border border-[var(--gris-linea)] rounded-xl p-4 bg-white shadow-sm flex flex-col items-center">
+                <img src="${g.bandera_url}" alt="Bandera ${g.nombre}" class="h-12 object-contain mb-2">
+                <img src="${g.candidato_foto_url}" alt="${g.candidato_nombre}" class="h-20 w-20 rounded-full object-cover border-2 border-[var(--azul-primario)] mb-2">
+                <p class="font-display text-base font-bold text-[var(--azul-marino)]">${g.nombre}</p>
+                <p class="text-xs text-slate-600 font-medium">${g.candidato_nombre}</p>
+                <p class="text-xs font-semibold text-[var(--azul-primario)] mt-1">${g.votos} votos (${g.porcentaje}%)</p>
+              </div>
+            `).join('')}
+          </div>
+          <p class="text-xs text-slate-500 mt-4 italic">De acuerdo con el reglamento electoral, un empate en primer lugar requerirá una segunda vuelta o resolución institucional.</p>
+        `;
+      } else {
+        const ganador = ganadores[0];
+        ganadorBox.innerHTML = `
+          <p class="uppercase tracking-widest text-xs font-semibold text-[var(--azul-primario)] mb-3">🏆 Partido ganador</p>
+          <img src="${ganador.bandera_url}" alt="Bandera ${ganador.nombre}" class="h-14 object-contain mx-auto mb-3">
+          <img src="${ganador.candidato_foto_url}" alt="${ganador.candidato_nombre}" class="h-24 w-24 rounded-full object-cover border-4 border-white shadow mx-auto mb-3">
+          <p class="font-display text-xl font-bold">${ganador.nombre}</p>
+          <p class="text-slate-600">${ganador.candidato_nombre} · ${ganador.votos} votos (${ganador.porcentaje}%)</p>
+        `;
+      }
 
       listaBox.innerHTML = '';
       data.forEach(p => {
