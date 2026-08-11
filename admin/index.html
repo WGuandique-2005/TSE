@@ -258,14 +258,9 @@
         <p class="text-sm text-amber-800">Faltan por votar</p>
         <p id="totalFaltan" class="font-display text-3xl font-bold text-amber-900 mt-2">—</p>
       </div>
-      <div class="border border-[var(--gris-linea)] rounded-xl p-5 flex flex-col justify-between">
-        <div>
-          <p class="text-sm text-slate-500">Estado de votación</p>
-          <p id="estadoVotacion" class="font-display text-xl font-bold mt-1">Consultando…</p>
-        </div>
-        <button id="btnToggleVotacion" onclick="toggleEstadoVotacion()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all">
-          Consultando…
-        </button>
+      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+        <p class="text-sm text-slate-500">Estado de votación</p>
+        <p id="estadoVotacion" class="font-display text-xl font-bold mt-2">Consultando…</p>
       </div>
     </section>
 
@@ -399,46 +394,9 @@
       if (error) { $('estadoVotacion').textContent = 'No disponible'; return false; }
       votacionAbierta = Boolean(data);
       $('estadoVotacion').textContent = votacionAbierta ? 'ABIERTA' : 'CERRADA';
-      $('estadoVotacion').className = `font-display text-xl font-bold mt-1 ${votacionAbierta ? 'text-green-700' : 'text-red-700'}`;
-      
-      const btn = $('btnToggleVotacion');
-      if (btn) {
-        btn.disabled = false;
-        if (votacionAbierta) {
-          btn.textContent = '🔒 Cerrar Votación';
-          btn.className = 'mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-all';
-        } else {
-          btn.textContent = '🔓 Abrir Votación';
-          btn.className = 'mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-all';
-        }
-      }
+      $('estadoVotacion').className = `font-display text-xl font-bold mt-2 ${votacionAbierta ? 'text-green-700' : 'text-red-700'}`;
       if (votantes.length) { renderVotantes(); actualizarResumen(); }
       return true;
-    }
-
-    async function toggleEstadoVotacion() {
-      const nuevoEstado = !votacionAbierta;
-      const accion = nuevoEstado ? 'abrir' : 'cerrar';
-      if (!confirm(`¿Estás seguro de que deseas ${accion} la votación?`)) return;
-
-      const btn = $('btnToggleVotacion');
-      if (btn) { btn.disabled = true; btn.textContent = 'Procesando…'; }
-
-      const { data, error } = await db.rpc('cambiar_estado_votacion', {
-        p_clave: claveAdminSesion,
-        p_abrir: nuevoEstado
-      });
-
-      if (error || !data || !data.success) {
-        mostrarMensaje((data && data.message) || 'No se pudo cambiar el estado de la votación.', true);
-        if (btn) btn.disabled = false;
-        return;
-      }
-
-      mostrarMensaje(`La votación se ha ${nuevoEstado ? 'abierto' : 'cerrado'} exitosamente.`);
-      await cargarEstado();
-      await cargarVotantes();
-      await cargarResultados();
     }
 
     async function cargarPartidos() {
@@ -621,7 +579,7 @@
       
       if (!cardGanador) return;
 
-      if (!votacionAbierta && totalVotosEmitidos > 0) {
+      if (totalVotosEmitidos > 0) {
         const maxVotos = data[0].votos;
         const ganadores = data.filter(p => p.votos === maxVotos);
 
@@ -651,7 +609,7 @@
           const ganador = ganadores[0];
           cardGanador.innerHTML = `
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-widest mb-4">
-              🏆 Ganador Electo
+              🏆 Ganador / Candidatura Liderando
             </div>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
               <div class="flex items-center gap-4">
@@ -668,18 +626,11 @@
             </div>
           `;
         }
-      } else if (votacionAbierta) {
-        cardGanador.classList.remove('hidden');
-        cardGanador.innerHTML = `
-          <div class="flex items-center justify-center gap-3 text-blue-900 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm">
-            <span>🔒 La votación está <strong>en curso</strong>. El candidato ganador se proclamará oficialmente al cerrar la elección.</span>
-          </div>
-        `;
       } else {
         cardGanador.classList.remove('hidden');
         cardGanador.innerHTML = `
           <div class="flex items-center justify-center gap-3 text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
-            <span>La votación finalizó sin registrar ningún voto emitido.</span>
+            <span>Aún no hay ningún voto registrado en el sistema.</span>
           </div>
         `;
       }
