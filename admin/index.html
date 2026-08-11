@@ -443,6 +443,9 @@
       const q = $('buscar').value.trim().toLowerCase();
       const fEstado = $('filtroEstado') ? $('filtroEstado').value : 'todos';
 
+      const totalVotos = votantes.filter(yaVoto).length;
+      const esAusencia = (!votacionAbierta && totalVotos > 0);
+
       const lista = votantes.filter(v => {
         const coincideTexto = `${nombreVotante(v)} ${v.codigo || ''}`.toLowerCase().includes(q);
         const votado = yaVoto(v);
@@ -478,7 +481,7 @@
         if (votado) {
           badgeText = '✓ Ya votó';
           badgeClass = 'bg-green-100 text-green-800';
-        } else if (!votacionAbierta) {
+        } else if (esAusencia) {
           badgeText = 'Ausente';
           badgeClass = 'bg-red-100 text-red-800';
         } else {
@@ -496,7 +499,45 @@
         $('tablaVotantes').appendChild(tr);
       });
     }
-    function actualizarResumen() { const votaron = votantes.filter(yaVoto).length, faltan = votantes.length - votaron; $('totalVotantes').textContent = votantes.length; $('totalVotaron').textContent = votaron; $('totalFaltan').textContent = faltan; const cardFaltan = $('totalFaltan').parentElement; if (!votacionAbierta && faltan > 0) { cardFaltan.firstElementChild.textContent = 'Ausentes'; cardFaltan.className = 'border border-red-200 bg-red-50 rounded-xl p-5 cursor-pointer hover:border-red-400 hover:shadow-md transition-all'; $('totalFaltan').className = 'font-display text-3xl font-bold text-red-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-red-800'; } else { cardFaltan.firstElementChild.textContent = votacionAbierta ? 'Pendientes' : 'Sin ausencias'; cardFaltan.className = 'border border-amber-200 bg-amber-50 rounded-xl p-5 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all'; $('totalFaltan').className = 'font-display text-3xl font-bold text-amber-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-amber-800'; } if (chartParticipacion) chartParticipacion.destroy(); const labels = votacionAbierta ? ['Han votado', 'Pendientes'] : ['Han votado', 'Ausentes']; const colors = votacionAbierta ? ['#16A34A', '#F59E0B'] : ['#16A34A', '#DC2626']; chartParticipacion = new Chart($('graficoParticipacion'), { type: 'doughnut', data: { labels: labels, datasets: [{ data: [votaron, faltan], backgroundColor: colors, borderColor: '#fff', borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
+
+    function actualizarResumen() {
+      const votaron = votantes.filter(yaVoto).length;
+      const faltan = votantes.length - votaron;
+      const esAusencia = (!votacionAbierta && votaron > 0);
+
+      $('totalVotantes').textContent = votantes.length;
+      $('totalVotaron').textContent = votaron;
+      $('totalFaltan').textContent = faltan;
+
+      const cardFaltan = $('totalFaltan').parentElement;
+      if (esAusencia && faltan > 0) {
+        cardFaltan.firstElementChild.textContent = 'Ausentes';
+        cardFaltan.className = 'border border-red-200 bg-red-50 rounded-xl p-5 cursor-pointer hover:border-red-400 hover:shadow-md transition-all';
+        $('totalFaltan').className = 'font-display text-3xl font-bold text-red-900 mt-2';
+        cardFaltan.firstElementChild.className = 'text-sm text-red-800';
+      } else {
+        cardFaltan.firstElementChild.textContent = (votacionAbierta || votaron === 0) ? 'Pendientes' : 'Sin ausencias';
+        cardFaltan.className = 'border border-amber-200 bg-amber-50 rounded-xl p-5 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all';
+        $('totalFaltan').className = 'font-display text-3xl font-bold text-amber-900 mt-2';
+        cardFaltan.firstElementChild.className = 'text-sm text-amber-800';
+      }
+
+      if (chartParticipacion) chartParticipacion.destroy();
+      const labels = esAusencia ? ['Han votado', 'Ausentes'] : ['Han votado', 'Pendientes'];
+      const colors = esAusencia ? ['#16A34A', '#DC2626'] : ['#16A34A', '#F59E0B'];
+      chartParticipacion = new Chart($('graficoParticipacion'), {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{ data: [votaron, faltan], backgroundColor: colors, borderColor: '#fff', borderWidth: 3 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
     async function cargarResultados() { const { data, error } = await db.from('resultados').select('*'); if (error || !data) { mostrarMensaje('No se pudieron cargar los resultados.', true); return; } if (chartResultados) chartResultados.destroy(); chartResultados = new Chart($('graficoResultados'), { type: 'bar', data: { labels: data.map(p => p.nombre), datasets: [{ label: 'Votos', data: data.map(p => p.votos), backgroundColor: '#1D4ED8', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } }); }
 
     function cerrarSesion() { claveAdminSesion = ''; $('contenidoAdmin').classList.add('hidden'); $('accesoAdmin').classList.remove('hidden'); $('claveAcceso').value = ''; $('buscar').value = ''; if ($('filtroEstado')) $('filtroEstado').value = 'todos'; votantes = []; $('tablaVotantes').innerHTML = ''; }
