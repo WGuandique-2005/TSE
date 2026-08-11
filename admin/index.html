@@ -246,15 +246,15 @@
 
     <div id="mensaje" class="hidden rounded-lg px-4 py-3 text-sm mb-6" role="status"></div>
     <section id="resumen" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" aria-label="Resumen de participación">
-      <div class="border border-[var(--gris-linea)] rounded-xl p-5">
+      <div onclick="filtrarEstado('todos')" class="border border-[var(--gris-linea)] rounded-xl p-5 cursor-pointer hover:border-[var(--azul-claro)] hover:shadow-md transition-all" title="Filtrar lista: Mostrar todos">
         <p class="text-sm text-slate-500">Total de votantes</p>
         <p id="totalVotantes" class="font-display text-3xl font-bold mt-2">—</p>
       </div>
-      <div class="border border-green-200 bg-green-50 rounded-xl p-5">
+      <div onclick="filtrarEstado('votaron')" class="border border-green-200 bg-green-50 rounded-xl p-5 cursor-pointer hover:border-green-400 hover:shadow-md transition-all" title="Filtrar lista: Mostrar solo quienes votaron">
         <p class="text-sm text-green-800">Han votado</p>
         <p id="totalVotaron" class="font-display text-3xl font-bold text-green-900 mt-2">—</p>
       </div>
-      <div class="border border-amber-200 bg-amber-50 rounded-xl p-5">
+      <div onclick="filtrarEstado('faltan')" class="border border-amber-200 bg-amber-50 rounded-xl p-5 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all" title="Filtrar lista: Mostrar pendientes / ausentes">
         <p class="text-sm text-amber-800">Faltan por votar</p>
         <p id="totalFaltan" class="font-display text-3xl font-bold text-amber-900 mt-2">—</p>
       </div>
@@ -293,15 +293,24 @@
 
     <section id="votantes" class="border border-[var(--gris-linea)] rounded-2xl overflow-hidden scroll-mt-32">
       <div
-        class="p-5 border-b border-[var(--gris-linea)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        class="p-5 border-b border-[var(--gris-linea)] flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 class="font-display text-lg font-bold">Votantes inscritos</h2>
           <p id="contadorFiltrado" class="text-sm text-slate-500 mt-1">Cargando registros…</p>
         </div>
-        <div class="flex gap-2"><label for="buscar" class="sr-only">Buscar votante</label><input id="buscar"
-            type="search" placeholder="Buscar por nombre o código"
-            class="w-full sm:w-72 border border-[var(--gris-linea)] rounded-lg px-3 py-2.5"><button id="btnActualizar"
-            class="btn-secondary px-3 rounded-lg" title="Actualizar">↻</button></div>
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+          <label for="filtroEstado" class="sr-only">Filtrar por estado</label>
+          <select id="filtroEstado"
+            class="w-full sm:w-auto border border-[var(--gris-linea)] rounded-lg px-3 py-2.5 text-sm bg-white font-medium text-slate-700 focus:outline-none focus:border-[var(--azul-primario)]">
+            <option value="todos">Todos los estados</option>
+            <option value="votaron">✓ Ya votaron</option>
+            <option value="faltan">⏳ Pendientes / Ausentes</option>
+          </select>
+          <label for="buscar" class="sr-only">Buscar votante</label>
+          <input id="buscar" type="search" placeholder="Buscar por nombre o código"
+            class="w-full sm:w-64 border border-[var(--gris-linea)] rounded-lg px-3 py-2.5 text-sm">
+          <button id="btnActualizar" class="btn-secondary px-3 py-2.5 rounded-lg" title="Actualizar">↻</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table class="voters-table w-full text-sm">
@@ -421,12 +430,77 @@
     });
 
     async function cargarVotantes() { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">Cargando registros…</td></tr>'; const { data, error } = await db.from('estudiantes').select('codigo,nombres,apellidos,ya_voto,fecha_voto').order('apellidos').order('nombres'); if (error) { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-red-700">No se pudo cargar la lista de votantes.</td></tr>'; mostrarMensaje('Supabase está bloqueando la lectura de estudiantes. Verifica el GRANT y la policy SELECT de la tabla.', true); return; } votantes = data || []; renderVotantes(); actualizarResumen(); }
-    function renderVotantes() { const q = $('buscar').value.trim().toLowerCase(); const lista = votantes.filter(v => `${nombreVotante(v)} ${v.codigo || ''}`.toLowerCase().includes(q)); $('contadorFiltrado').textContent = `Mostrando ${lista.length} de ${votantes.length} votantes`; $('tablaVotantes').innerHTML = ''; if (!lista.length) { $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">No se encontraron votantes.</td></tr>'; return; } lista.forEach(v => { const tr = document.createElement('tr'); tr.className = 'border-t border-[var(--gris-linea)]'; const tdNombre = document.createElement('td'); tdNombre.className = 'px-5 py-3 font-medium'; tdNombre.textContent = nombreVotante(v); const tdCodigo = document.createElement('td'); tdCodigo.className = 'px-5 py-3 text-slate-600'; tdCodigo.textContent = v.codigo || '—'; const tdEstado = document.createElement('td'); tdEstado.className = 'px-5 py-3'; const badge = document.createElement('span'); const votado = yaVoto(v); let badgeText = '', badgeClass = ''; if (votado) { badgeText = '✓ Ya votó'; badgeClass = 'bg-green-100 text-green-800'; } else if (!votacionAbierta) { badgeText = 'Ausente'; badgeClass = 'bg-red-100 text-red-800'; } else { badgeText = 'Pendiente'; badgeClass = 'bg-amber-100 text-amber-800'; } badge.className = `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`; badge.textContent = badgeText; tdEstado.appendChild(badge); const tdFecha = document.createElement('td'); tdFecha.className = 'px-5 py-3 text-slate-600 text-xs whitespace-nowrap'; const fechaVal = v.fecha_voto || v.created_at || v.creado_en; tdFecha.textContent = (votado && fechaVal) ? formatearFecha(fechaVal) : '—'; tr.append(tdNombre, tdCodigo, tdEstado, tdFecha); $('tablaVotantes').appendChild(tr); }); }
-    function actualizarResumen() { const votaron = votantes.filter(yaVoto).length, faltan = votantes.length - votaron; $('totalVotantes').textContent = votantes.length; $('totalVotaron').textContent = votaron; $('totalFaltan').textContent = faltan; const cardFaltan = $('totalFaltan').parentElement; if (!votacionAbierta && faltan > 0) { cardFaltan.firstElementChild.textContent = 'Ausentes'; cardFaltan.className = 'border border-red-200 bg-red-50 rounded-xl p-5'; $('totalFaltan').className = 'font-display text-3xl font-bold text-red-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-red-800'; } else { cardFaltan.firstElementChild.textContent = votacionAbierta ? 'Pendientes' : 'Sin ausencias'; cardFaltan.className = 'border border-amber-200 bg-amber-50 rounded-xl p-5'; $('totalFaltan').className = 'font-display text-3xl font-bold text-amber-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-amber-800'; } if (chartParticipacion) chartParticipacion.destroy(); const labels = votacionAbierta ? ['Han votado', 'Pendientes'] : ['Han votado', 'Ausentes']; const colors = votacionAbierta ? ['#16A34A', '#F59E0B'] : ['#16A34A', '#DC2626']; chartParticipacion = new Chart($('graficoParticipacion'), { type: 'doughnut', data: { labels: labels, datasets: [{ data: [votaron, faltan], backgroundColor: colors, borderColor: '#fff', borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
+    function filtrarEstado(estado) {
+      if ($('filtroEstado')) {
+        $('filtroEstado').value = estado;
+        renderVotantes();
+        const sec = $('votantes');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function renderVotantes() {
+      const q = $('buscar').value.trim().toLowerCase();
+      const fEstado = $('filtroEstado') ? $('filtroEstado').value : 'todos';
+
+      const lista = votantes.filter(v => {
+        const coincideTexto = `${nombreVotante(v)} ${v.codigo || ''}`.toLowerCase().includes(q);
+        const votado = yaVoto(v);
+        let coincideEstado = true;
+        if (fEstado === 'votaron') {
+          coincideEstado = votado;
+        } else if (fEstado === 'faltan') {
+          coincideEstado = !votado;
+        }
+        return coincideTexto && coincideEstado;
+      });
+
+      $('contadorFiltrado').textContent = `Mostrando ${lista.length} de ${votantes.length} votantes`;
+      $('tablaVotantes').innerHTML = '';
+      if (!lista.length) {
+        $('tablaVotantes').innerHTML = '<tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">No se encontraron votantes con los filtros aplicados.</td></tr>';
+        return;
+      }
+      lista.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t border-[var(--gris-linea)]';
+        const tdNombre = document.createElement('td');
+        tdNombre.className = 'px-5 py-3 font-medium';
+        tdNombre.textContent = nombreVotante(v);
+        const tdCodigo = document.createElement('td');
+        tdCodigo.className = 'px-5 py-3 text-slate-600';
+        tdCodigo.textContent = v.codigo || '—';
+        const tdEstado = document.createElement('td');
+        tdEstado.className = 'px-5 py-3';
+        const badge = document.createElement('span');
+        const votado = yaVoto(v);
+        let badgeText = '', badgeClass = '';
+        if (votado) {
+          badgeText = '✓ Ya votó';
+          badgeClass = 'bg-green-100 text-green-800';
+        } else if (!votacionAbierta) {
+          badgeText = 'Ausente';
+          badgeClass = 'bg-red-100 text-red-800';
+        } else {
+          badgeText = 'Pendiente';
+          badgeClass = 'bg-amber-100 text-amber-800';
+        }
+        badge.className = `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`;
+        badge.textContent = badgeText;
+        tdEstado.appendChild(badge);
+        const tdFecha = document.createElement('td');
+        tdFecha.className = 'px-5 py-3 text-slate-600 text-xs whitespace-nowrap';
+        const fechaVal = v.fecha_voto || v.created_at || v.creado_en;
+        tdFecha.textContent = (votado && fechaVal) ? formatearFecha(fechaVal) : '—';
+        tr.append(tdNombre, tdCodigo, tdEstado, tdFecha);
+        $('tablaVotantes').appendChild(tr);
+      });
+    }
+    function actualizarResumen() { const votaron = votantes.filter(yaVoto).length, faltan = votantes.length - votaron; $('totalVotantes').textContent = votantes.length; $('totalVotaron').textContent = votaron; $('totalFaltan').textContent = faltan; const cardFaltan = $('totalFaltan').parentElement; if (!votacionAbierta && faltan > 0) { cardFaltan.firstElementChild.textContent = 'Ausentes'; cardFaltan.className = 'border border-red-200 bg-red-50 rounded-xl p-5 cursor-pointer hover:border-red-400 hover:shadow-md transition-all'; $('totalFaltan').className = 'font-display text-3xl font-bold text-red-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-red-800'; } else { cardFaltan.firstElementChild.textContent = votacionAbierta ? 'Pendientes' : 'Sin ausencias'; cardFaltan.className = 'border border-amber-200 bg-amber-50 rounded-xl p-5 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all'; $('totalFaltan').className = 'font-display text-3xl font-bold text-amber-900 mt-2'; cardFaltan.firstElementChild.className = 'text-sm text-amber-800'; } if (chartParticipacion) chartParticipacion.destroy(); const labels = votacionAbierta ? ['Han votado', 'Pendientes'] : ['Han votado', 'Ausentes']; const colors = votacionAbierta ? ['#16A34A', '#F59E0B'] : ['#16A34A', '#DC2626']; chartParticipacion = new Chart($('graficoParticipacion'), { type: 'doughnut', data: { labels: labels, datasets: [{ data: [votaron, faltan], backgroundColor: colors, borderColor: '#fff', borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
     async function cargarResultados() { const { data, error } = await db.from('resultados').select('*'); if (error || !data) { mostrarMensaje('No se pudieron cargar los resultados.', true); return; } if (chartResultados) chartResultados.destroy(); chartResultados = new Chart($('graficoResultados'), { type: 'bar', data: { labels: data.map(p => p.nombre), datasets: [{ label: 'Votos', data: data.map(p => p.votos), backgroundColor: '#1D4ED8', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } }); }
 
-    function cerrarSesion() { claveAdminSesion = ''; $('contenidoAdmin').classList.add('hidden'); $('accesoAdmin').classList.remove('hidden'); $('claveAcceso').value = ''; $('buscar').value = ''; votantes = []; $('tablaVotantes').innerHTML = ''; }
-    $('buscar').addEventListener('input', renderVotantes); $('btnActualizar').addEventListener('click', () => { cargarVotantes(); cargarResultados(); cargarEstado(); cargarPartidos(); }); $('btnSalir').addEventListener('click', cerrarSesion);
+    function cerrarSesion() { claveAdminSesion = ''; $('contenidoAdmin').classList.add('hidden'); $('accesoAdmin').classList.remove('hidden'); $('claveAcceso').value = ''; $('buscar').value = ''; if ($('filtroEstado')) $('filtroEstado').value = 'todos'; votantes = []; $('tablaVotantes').innerHTML = ''; }
+    $('buscar').addEventListener('input', renderVotantes); if ($('filtroEstado')) $('filtroEstado').addEventListener('change', renderVotantes); $('btnActualizar').addEventListener('click', () => { cargarVotantes(); cargarResultados(); cargarEstado(); cargarPartidos(); }); $('btnSalir').addEventListener('click', cerrarSesion);
     async function acceder() { const clave = $('claveAcceso').value.trim(), err = $('errorAcceso'), btn = $('btnAcceder'); err.classList.add('hidden'); if (!clave) { err.textContent = 'Escribe la clave de administrador.'; err.classList.remove('hidden'); return; } btn.disabled = true; btn.textContent = 'Verificando…'; const estadoOk = await cargarEstado(); if (!estadoOk) { btn.disabled = false; btn.textContent = 'Acceder'; err.textContent = 'No se pudo consultar el estado de la votación.'; err.classList.remove('hidden'); return; } const { data, error } = await db.rpc('cambiar_estado_votacion', { p_clave: clave, p_abrir: votacionAbierta }); btn.disabled = false; btn.textContent = 'Acceder'; if (error || !data || !data.success) { err.textContent = (data && data.message) || 'La clave no es válida o no se pudo verificar.'; err.classList.remove('hidden'); return; } claveAdminSesion = clave; $('accesoAdmin').classList.add('hidden'); $('contenidoAdmin').classList.remove('hidden'); cargarVotantes(); cargarResultados(); cargarPartidos(); }
     $('btnAcceder').addEventListener('click', acceder); $('claveAcceso').addEventListener('keydown', e => { if (e.key === 'Enter') acceder(); });
     function actualizarReloj() { $('reloj').textContent = new Date().toLocaleString('es-SV', { dateStyle: 'full', timeStyle: 'short' }); } actualizarReloj(); setInterval(actualizarReloj, 30000); cargarEstado();
